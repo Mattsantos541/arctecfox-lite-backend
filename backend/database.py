@@ -1,10 +1,18 @@
+import os
+from supabase import create_client
+from dotenv import load_dotenv
 
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+# Load environment variables
+load_dotenv()
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./pm_planner.db"
+# Get Supabase credentials from .env
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+# Initialize Supabase client
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Function to fetch all assets from the "assets" table
+def get_assets():
+    response = supabase.table("assets").select("*").execute()
+    return response.data

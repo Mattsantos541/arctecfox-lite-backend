@@ -1,17 +1,17 @@
-
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from database import get_assets
 
-app = FastAPI(title="AF PM Planner")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app = FastAPI()
 
 @app.get("/")
-def read_root():
-    return {"message": "Welcome to AF PM Planner API"}
+async def home():
+    return {"message": "AF-PM Planner Backend Running with FastAPI!"}
+
+# New route: Fetch assets from Supabase
+@app.get("/assets")
+async def assets():
+    return get_assets()
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)
