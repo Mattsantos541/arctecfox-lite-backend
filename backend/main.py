@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="AI PM Planner")
+app = FastAPI(title="AF PM Planner")
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,4 +14,4 @@ app.add_middleware(
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to AI PM Planner API"}
+    return {"message": "Welcome to AF PM Planner API"}
