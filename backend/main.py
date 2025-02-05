@@ -1,5 +1,5 @@
-from fastapi import FastAPI
-from database import get_assets
+from fastapi import FastAPI, HTTPException
+from database import get_assets  # Ensure this is correct
 
 app = FastAPI()
 
@@ -7,10 +7,16 @@ app = FastAPI()
 async def home():
     return {"message": "AF-PM Planner Backend Running with FastAPI!"}
 
-# New route: Fetch assets from Supabase
 @app.get("/assets")
 async def assets():
-    return get_assets()
+    """API route to fetch assets from Supabase"""
+    try:
+        data = get_assets()
+        if not data:
+            raise HTTPException(status_code=404, detail="No assets found")
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

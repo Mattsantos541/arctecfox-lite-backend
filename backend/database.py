@@ -1,18 +1,28 @@
 import os
-from supabase import create_client
+from supabase import create_client, Client
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-# Get Supabase credentials from .env
+# Get Supabase URL and API Key
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")  # Use the service key for backend operations
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
-# Initialize Supabase client (backend should use the service key, NOT the anon key)
-supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+# Validate if the keys are loading correctly
+if not SUPABASE_SERVICE_KEY:
+    raise ValueError("SUPABASE_SERVICE_KEY is missing. Check your .env file.")
 
-# Function to fetch all assets from the "assets" table
+# Initialize Supabase client
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
 def get_assets():
+    """Fetch all assets from Supabase."""
     response = supabase.table("assets").select("*").execute()
+
+    if response.error:
+        print(f"Error fetching assets: {response.error}")
+        return []
+
     return response.data
+
