@@ -5,27 +5,29 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Get Supabase URL and API Key
+# Get Supabase credentials
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
-# Validate if the keys are loading correctly
-if not SUPABASE_SERVICE_KEY or not SUPABASE_URL:
-    raise ValueError("Supabase credentials are missing. Check your .env file.")
+# Debug: Print environment variables (DO NOT DO THIS IN PRODUCTION)
+print(f"🔹 SUPABASE_URL: {SUPABASE_URL}")
+print(f"🔹 SUPABASE_SERVICE_KEY: {SUPABASE_SERVICE_KEY[:5]}...[HIDDEN]")  # Hide most of the key for security
+
+# Ensure credentials exist
+if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+    raise ValueError("❌ Supabase credentials are missing. Check your .env file.")
 
 # Initialize Supabase client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 def get_assets():
-    """Fetch all assets from Supabase and print the response for debugging."""
+    """Fetch all assets from Supabase and print response for debugging."""
     response = supabase.table("assets").select("*").execute()
 
-    print("Supabase Response:", response)
+    # Debugging: Print full API response
+    print("🔹 Supabase API Response:", response)
 
+    if hasattr(response, "data"):
+        return response.data  # Correctly return asset data
 
-    if isinstance(response, dict) and "error" in response:
-        print(f"Error fetching assets: {response['error']}")
-        return []
-
-    return response.get("data", [])  # Ensure it correctly returns asset data
-
+    return []  # Return an empty list if no data is found
