@@ -10,19 +10,22 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
 # Validate if the keys are loading correctly
-if not SUPABASE_SERVICE_KEY:
-    raise ValueError("SUPABASE_SERVICE_KEY is missing. Check your .env file.")
+if not SUPABASE_SERVICE_KEY or not SUPABASE_URL:
+    raise ValueError("Supabase credentials are missing. Check your .env file.")
 
 # Initialize Supabase client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 def get_assets():
-    """Fetch all assets from Supabase."""
+    """Fetch all assets from Supabase and print the response for debugging."""
     response = supabase.table("assets").select("*").execute()
 
-    if response.error:
-        print(f"Error fetching assets: {response.error}")
+    print("Supabase Response:", response)
+
+
+    if isinstance(response, dict) and "error" in response:
+        print(f"Error fetching assets: {response['error']}")
         return []
 
-    return response.data
+    return response.get("data", [])  # Ensure it correctly returns asset data
 
