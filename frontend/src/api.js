@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://127.0.0.1:8000"; // FastAPI backend URL
+const API_URL = "http://127.0.0.1:8000"; // Ensure this matches your backend URL
 
 export const fetchAssets = async () => {
   try {
