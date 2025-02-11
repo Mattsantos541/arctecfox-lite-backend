@@ -4,7 +4,7 @@ import Dashboard from "./pages/Dashboard";
 
 function App() {
   return (
-    <Router>
+    <Router basename="/">
       <Routes>
         <Route path="/" element={<h1>Welcome to AF-PM Planner</h1>} />
         <Route path="/dashboard" element={<Dashboard />} />
@@ -15,4 +15,3 @@ function App() {
 }
 
 export default App;
-

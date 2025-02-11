@@ -1,14 +1,28 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { fetchAssets } from "../api";
 
 function Dashboard() {
+  const [assets, setAssets] = useState([]);
+
   useEffect(() => {
-    console.log("✅ Dashboard component is rendering!");
+    fetchAssets().then(setAssets);
   }, []);
 
   return (
     <div>
       <h1>Dashboard</h1>
-      <p>If you see this, React routing is working!</p>
+      <h2>Assets List</h2>
+      <ul>
+        {assets.length > 0 ? (
+          assets.map((asset, index) => (
+            <li key={index}>
+              {asset.name} - {asset.category} - {asset.usage_hours} hours
+            </li>
+          ))
+        ) : (
+          <p>No assets found.</p>
+        )}
+      </ul>
     </div>
   );
 }
