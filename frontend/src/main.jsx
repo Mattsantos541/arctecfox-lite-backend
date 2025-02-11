@@ -9,3 +9,14 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <App />
   </React.StrictMode>
 );
+
+// Additional log to check if Root Element is found
+if (!document.getElementById("root")) {
+  console.error("Root element not found! Check your index.html.");
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
