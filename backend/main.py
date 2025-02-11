@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from database import get_assets  # Ensure this is correct
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI()
 
@@ -17,6 +19,15 @@ async def assets():
         return data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # You can specify your frontend URL here
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 if __name__ == "__main__":
     import uvicorn
