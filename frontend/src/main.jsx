@@ -4,7 +4,23 @@ import App from "./App";
 
 console.log("🚀 Main.jsx is running!"); // Debug log
 
-ReactDOM.createRoot(document.getElementById("root")).render(
+const root = ReactDOM.createRoot(document.getElementById("root"));
+
+// Added to attempt to enable dev tools, but this is incomplete and likely won't work as intended.  
+// The original problem of non-functional dev tools requires a different approach.
+if (process.env.NODE_ENV === 'development') {
+  //This will likely throw an error because it's trying to import from a non-existent path.  This needs to be fixed.
+  try {
+    const { worker } = await import('./mocks/browser');
+    worker.start();
+  } catch (error) {
+    console.error("Failed to enable mocks:", error);
+  }
+
+}
+
+
+root.render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
@@ -14,9 +30,3 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 if (!document.getElementById("root")) {
   console.error("Root element not found! Check your index.html.");
 }
-
-ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
