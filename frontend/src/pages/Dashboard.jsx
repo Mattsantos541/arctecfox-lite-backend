@@ -3,26 +3,32 @@ import { fetchAssets } from "../api";
 
 function Dashboard() {
   const [assets, setAssets] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchAssets().then(setAssets);
+    fetchAssets().then(data => {
+      setAssets(data);
+      setLoading(false);
+    }).catch(error => {
+      console.error("Error fetching assets:", error);
+      setLoading(false);
+    });
   }, []);
 
   return (
     <div>
       <h1>Dashboard</h1>
-      <h2>Assets List</h2>
-      <ul>
-        {assets.length > 0 ? (
-          assets.map((asset, index) => (
-            <li key={index}>
-              {asset.name} - {asset.category} - {asset.usage_hours} hours
-            </li>
-          ))
-        ) : (
-          <p>No assets found.</p>
-        )}
-      </ul>
+      {loading ? (
+        <p>Loading assets...</p>
+      ) : assets.length > 0 ? (
+        <ul>
+          {assets.map(asset => (
+            <li key={asset.id}>{asset.name} - {asset.category} ({asset.usage_hours} hours)</li>
+          ))}
+        </ul>
+      ) : (
+        <p>No assets found.</p>
+      )}
     </div>
   );
 }
