@@ -3,8 +3,9 @@ from database import get_assets  # Ensure this is correct
 from fastapi.middleware.cors import CORSMiddleware
 
 origins = [
-    "http://localhost:5173",  # Local dev environment
-    "https://8e765ae3-27d1-4c38-8a73-eaf9fff7b365-00-2nscoe9m1740v.spock.replit.dev",  # Replit frontend URL
+    "http://localhost:5173",
+    "https://8e765ae3-27d1-4c38-8a73-eaf9fff7b365-00-2nscoe9m1740v.spock.replit.dev",
+    "https://8e765ae3-27d1-4c38-8a73-eaf9fff7b365-00-2nscoe9m1740v.spock.replit.dev:8000"
 ]
 
 app = FastAPI()
