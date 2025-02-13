@@ -2,8 +2,7 @@
 import axios from "axios";
 
 // Get the current hostname from the window location
-const hostname = window.location.hostname;
-const API_URL = `https://${hostname}:8000`;
+const API_URL = window.location.protocol + '//' + window.location.hostname + ':8000';
 
 export const fetchAssets = async () => {
   try {
@@ -22,7 +21,11 @@ export const fetchAssets = async () => {
       return [];
     }
   } catch (error) {
-    console.error("❌ Error fetching assets:", error);
+    console.error("❌ Error fetching assets:", error.message);
+    if (error.response) {
+      console.error("Response data:", error.response.data);
+      console.error("Response status:", error.response.status);
+    }
     return [];
   }
 };
