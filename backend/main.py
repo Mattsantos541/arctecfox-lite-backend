@@ -25,12 +25,14 @@ async def assets():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # Update this in production!
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
 )
 
 

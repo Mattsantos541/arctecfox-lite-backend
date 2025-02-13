@@ -3,7 +3,8 @@ import axios from "axios";
 
 // Get the current hostname from the window location
 const hostname = window.location.hostname;
-const API_URL = `https://${hostname}:8000`;
+const API_URL = "https://8e765ae3-27d1-4c38-8a73-eaf9fff7b365-00-2nscoe9m1740v.spock.replit.dev";
+
 
 export const fetchAssets = async () => {
   try {
