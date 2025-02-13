@@ -2,6 +2,10 @@ from fastapi import FastAPI, HTTPException
 from database import get_assets  # Ensure this is correct
 from fastapi.middleware.cors import CORSMiddleware
 
+origins = [
+    "http://localhost:5173",  # Local dev environment
+    "https://8e765ae3-27d1-4c38-8a73-eaf9fff7b365-00-2nscoe9m1740v.spock.replit.dev",  # Replit frontend URL
+]
 
 app = FastAPI()
 
@@ -22,7 +26,7 @@ async def assets():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # You can specify your frontend URL here
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
