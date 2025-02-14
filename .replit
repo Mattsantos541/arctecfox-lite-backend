@@ -31,7 +31,12 @@ externalPort = 9000
 [[workflows.workflow]]
 name = "Backend"
 author = 2231033
+mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd backend && uvicorn main:app --host 0.0.0.0 --port 8000"
+args = "cd backend && uvicorn main:app --host 0.0.0.0 --port 9000 --reload"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd frontend && npm run dev -- --host 0.0.0.0 --port 5173"

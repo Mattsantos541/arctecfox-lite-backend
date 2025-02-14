@@ -1,7 +1,7 @@
 import axios from "axios";
 
-// Get the current hostname and use port 8000 for the backend
-const API_URL = `${window.location.protocol}//${window.location.hostname}:8000`;
+// Get the current hostname and use port 9000 for the backend
+const API_URL = `${window.location.protocol}//${window.location.hostname}:9000`;
 
 export const fetchAssets = async () => {
   try {
