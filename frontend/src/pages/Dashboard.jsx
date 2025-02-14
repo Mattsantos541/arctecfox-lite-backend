@@ -11,14 +11,10 @@ function Dashboard() {
         console.log("📦 API Response in Dashboard:", data);
 
         // Ensure data is an array before using .map()
-        if (Array.isArray(data)) {
-          setAssets(data);
-        } else {
-          console.error("⚠️ Unexpected API response:", data);
-          setAssets([]); // Prevent crash
-        }
+        setAssets(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("❌ Error fetching assets:", error);
+        setAssets([]);
       }
     };
 
@@ -44,4 +40,3 @@ function Dashboard() {
 }
 
 export default Dashboard;
-
