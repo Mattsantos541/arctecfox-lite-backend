@@ -1,31 +1,22 @@
-
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import MainLayout from "./layouts/MainLayout";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
-import Home from "./pages/Home";
+import Settings from "./pages/Settings"; // Ensure the path is correct
 
 function App() {
-  return (
-    <Router>
-      <div>
-        <nav>
-          <ul>
-            <li><Link to="/">Home</Link></li>
-            <li><Link to="/dashboard">Dashboard</Link></li>
-            <li><Link to="/login">Login</Link></li>
-          </ul>
-        </nav>
-
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="*" element={<h1>⚠️ 404 - Page Not Found</h1>} />
-        </Routes>
-      </div>
-    </Router>
-  );
+    return (
+        <Router>
+            <MainLayout>
+                <Routes>
+                    <Route path="/" element={<Login />} />
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/settings" element={<Settings />} />
+                </Routes>
+            </MainLayout>
+        </Router>
+    );
 }
 
 export default App;
