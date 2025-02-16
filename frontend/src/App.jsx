@@ -1,17 +1,25 @@
 import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
+import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
-import Settings from "./pages/Settings"; // Ensure the path is correct
+import PMPlanner from "./pages/PMPlanner";
+import WorkOrders from "./pages/WorkOrders";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 
 function App() {
     return (
         <Router>
             <MainLayout>
                 <Routes>
-                    <Route path="/" element={<Login />} />
+                    <Route path="/" element={<Home />} />
+                    <Route path="/login" element={<Login />} />
                     <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/pm-planner" element={<PMPlanner />} />
+                    <Route path="/work-orders" element={<WorkOrders />} />
+                    <Route path="/reports" element={<Reports />} />
                     <Route path="/settings" element={<Settings />} />
                 </Routes>
             </MainLayout>
