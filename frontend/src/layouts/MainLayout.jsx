@@ -1,22 +1,22 @@
 import React from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { BarChart3, Settings as SettingsIcon, FileText, List, LayoutDashboard, User } from "lucide-react";
-import afLogo from "../assets/af-logo.png"; // Ensure the logo is placed in src/assets
+import afLogo from "../assets/af-logo.jpg"; // Make sure this file exists inside src/assets
 
 const Sidebar = () => {
   return (
-    <aside className="h-screen w-64 bg-[#0A192F] text-white flex flex-col fixed top-0 left-0 shadow-lg">
-      {/* Logo Section (Top Left) */}
-      <div className="flex items-center justify-center py-6 border-b border-gray-700">
+    <aside className="h-screen w-64 bg-[#0A192F] text-white flex flex-col fixed top-0 left-0 shadow-lg z-50">
+      {/* Logo Section */}
+      <div className="flex items-center justify-center p-4 border-b border-gray-700">
         <img 
           src={afLogo} 
           alt="ArcTecFox PM" 
-          className="h-12 w-auto max-w-[80px] object-contain"
+          className="h-12 w-auto object-contain"
         />
       </div>
 
       {/* Navigation Links */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
+      <nav className="flex-1 px-4 py-4 space-y-2">
         <NavItem to="/dashboard" icon={<LayoutDashboard />} label="Dashboard" />
         <NavItem to="/pm-planner" icon={<BarChart3 />} label="PM Planner" />
         <NavItem to="/work-orders" icon={<List />} label="Work Orders" />
@@ -27,7 +27,7 @@ const Sidebar = () => {
   );
 };
 
-// Sidebar Nav Item Component
+// Sidebar Navigation Item
 const NavItem = ({ to, icon, label }) => (
   <NavLink
     to={to}
@@ -47,7 +47,7 @@ const NavItem = ({ to, icon, label }) => (
 const TopBar = () => {
   return (
     <header className="fixed top-0 left-64 right-0 h-16 bg-white shadow-md flex items-center justify-between px-6 border-b z-50">
-      {/* Page Title Placeholder (Can be updated dynamically) */}
+      {/* Page Title */}
       <div className="text-gray-700 font-semibold text-lg">ArcTecFox PM</div>
 
       {/* User Info & Logout */}
@@ -69,7 +69,7 @@ const MainLayout = () => {
       <Sidebar />
       <div className="flex-1 ml-64">
         <TopBar />
-        <main className="p-6 mt-16 min-h-screen">
+        <main className="p-6 mt-16">
           <Outlet />
         </main>
       </div>
