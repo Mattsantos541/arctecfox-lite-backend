@@ -7,46 +7,54 @@ import {
   List, 
   LayoutDashboard, 
   User, 
-  LogOut 
+  LogOut, 
+  Search, 
+  SlidersHorizontal 
 } from "lucide-react";
-import afLogo from "../assets/af-logo.jpg"; // Ensure this file is in src/assets
-
-
+import afLogo from "../assets/af-logo.jpg"; // Ensure the correct logo path
 
 const Sidebar = () => {
   return (
-    <aside className="h-screen w-64 bg-[#0A192F] text-white flex flex-col fixed top-0 left-0 shadow-lg">
-      {/* Logo Section */}
-      <div className="flex items-center justify-center p-6 border-b border-gray-700">
+    <aside className="h-screen w-72 bg-white text-gray-900 flex flex-col fixed top-0 left-0 shadow-lg border-r">
+      {/* ✅ Logo Section */}
+      <div className="flex items-center justify-center p-6 border-b">
         <img 
           src={afLogo} 
           alt="ArcTecFox PM" 
-          className="h-12 w-auto object-contain"
+          className="h-14 w-auto object-contain"
         />
       </div>
 
-      {/* Navigation Links */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
+      {/* ✅ Navigation Links */}
+      <nav className="flex-1 px-6 py-4 space-y-2">
         <NavItem to="/dashboard" icon={<LayoutDashboard />} label="Dashboard" />
         <NavItem to="/pm-planner" icon={<BarChart3 />} label="PM Planner" />
         <NavItem to="/work-orders" icon={<List />} label="Work Orders" />
         <NavItem to="/reports" icon={<FileText />} label="Reports" />
         <NavItem to="/settings" icon={<SettingsIcon />} label="Settings" />
       </nav>
+
+      {/* ✅ Contact Support Section */}
+      <div className="p-6 border-t text-gray-600 text-sm">
+        <p>Need Help?</p>
+        <a href="mailto:support@arctecfox.com" className="text-blue-500 hover:underline">
+          Contact Support
+        </a>
+      </div>
     </aside>
   );
 };
 
-// Sidebar Nav Item Component
+// ✅ Sidebar Navigation Item
 const NavItem = ({ to, icon, label }) => (
   <NavLink
     to={to}
     end
     className={({ isActive }) =>
-      `flex items-center gap-3 p-3 rounded-lg transition duration-300 ${
+      `flex items-center gap-4 px-4 py-3 rounded-lg transition duration-300 ${
         isActive 
-          ? "bg-[#007BFF] text-white font-semibold shadow-md"
-          : "hover:bg-[#0056b3] hover:text-white text-gray-300"
+          ? "bg-blue-100 text-blue-700 font-semibold"
+          : "hover:bg-gray-200 hover:text-gray-900 text-gray-600"
       }`
     }
   >
@@ -55,42 +63,14 @@ const NavItem = ({ to, icon, label }) => (
   </NavLink>
 );
 
-// Top Navigation Bar
+// ✅ Top Navigation Bar with Search and User Info
 const TopBar = () => {
   return (
-    <header className="fixed top-0 left-64 right-0 h-16 bg-white shadow-md flex items-center justify-between px-6 border-b z-10">
-      {/* Centered Title */}
-      <div className="text-gray-800 font-bold text-xl flex-1 text-center">
-        ArcTecFox PM
-      </div>
-
-      {/* User Info & Logout */}
-      <div className="flex items-center space-x-6">
-        <span className="text-gray-700 font-medium">Welcome, User</span>
-        <button 
-          className="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-md shadow-sm text-gray-700 hover:bg-gray-200 hover:text-[#007BFF] transition duration-300"
-        >
-          <LogOut className="w-5 h-5" />
-          <span>Logout</span>
-        </button>
-      </div>
-    </header>
-  );
-};
-
-// Main Layout Structure
-const MainLayout = () => {
-  return (
-    <div className="flex min-h-screen bg-[#F8F9FA]">
-      <Sidebar />
-      <div className="flex-1 ml-64">
-        <TopBar />
-        <main className="p-6 mt-16">
-          <Outlet />
-        </main>
-      </div>
-    </div>
-  );
-};
-
-export default MainLayout;
+    <header className="fixed top-0 left-72 right-0 h-16 bg-white shadow-md flex items-center px-6 border-b z-10">
+      {/* 🔍 Search Bar */}
+      <div className="flex items-center bg-gray-100 px-4 py-2 rounded-lg w-96">
+        <Search className="w-5 h-5 text-gray-500" />
+        <input 
+          type="text" 
+          placeholder="Search..." 
+          className="bg-transpare
