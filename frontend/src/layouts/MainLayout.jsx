@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import afLogo from "../assets/af-logo.jpg"; // Ensure this file is in src/assets
 
+
+
 const Sidebar = () => {
   return (
     <aside className="h-screen w-64 bg-[#0A192F] text-white flex flex-col fixed top-0 left-0 shadow-lg">
