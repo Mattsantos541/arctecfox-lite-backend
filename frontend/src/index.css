@@ -1,29 +1,26 @@
-/* ✅ Move Tailwind to the very top */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ✅ Create a custom class instead of using `@apply` in `body` */
-.custom-body {
-  @apply bg-gray-100 text-gray-900;
-}
+@layer components {
+  .custom-body {
+    @apply bg-gray-100 text-gray-900;
+  }
 
-.custom-h1 {
-  @apply text-gray-800 font-bold;
-}
+  .custom-nav {
+    @apply bg-gray-900 p-4 flex space-x-6;
+  }
 
-.custom-nav {
-  @apply bg-gray-900 p-4 flex space-x-6;
-}
+  .custom-nav li {
+    @apply inline-block;
+  }
 
-.custom-nav li {
-  @apply inline-block;
-}
+  .custom-nav a {
+    @apply text-white hover:text-gray-300;
+  }
 
-.custom-nav a {
-  @apply text-white hover:text-gray-300;
-}
-
-.custom-button {
-  @apply bg-gray-900 text-white px-4 py-2 rounded hover:bg-gray-700;
+  .custom-button {
+    @apply bg-gray-900 text-white px-4 py-2 rounded hover:bg-gray-700;
+  }
 }
