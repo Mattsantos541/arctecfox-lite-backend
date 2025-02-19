@@ -1,76 +1,82 @@
+
 import React from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { 
   BarChart3, 
-  Settings as SettingsIcon, 
+  Settings, 
   FileText, 
   List, 
-  LayoutDashboard, 
-  User, 
-  LogOut, 
-  Search, 
-  SlidersHorizontal 
+  LayoutDashboard,
+  MessageCircle,
+  Tool,
+  Map,
+  Package,
+  Users
 } from "lucide-react";
-import afLogo from "../assets/af-logo.jpg"; // Ensure the correct logo path
+import afLogo from "../assets/af-logo.jpg";
 
-const Sidebar = () => {
+const MainLayout = () => {
   return (
-    <aside className="h-screen w-72 bg-white text-gray-900 flex flex-col fixed top-0 left-0 shadow-lg border-r">
-      {/* ✅ Logo Section */}
-      <div className="flex items-center justify-center p-6 border-b">
-        <img 
-          src={afLogo} 
-          alt="ArcTecFox PM" 
-          className="h-14 w-auto object-contain"
-        />
-      </div>
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar */}
+      <aside className="w-64 bg-[#1a2236] text-white">
+        {/* Logo Section */}
+        <div className="h-16 flex items-center px-6 border-b border-gray-700">
+          <img src={afLogo} alt="Logo" className="h-8" />
+        </div>
 
-      {/* ✅ Navigation Links */}
-      <nav className="flex-1 px-6 py-4 space-y-2">
-        <NavItem to="/dashboard" icon={<LayoutDashboard />} label="Dashboard" />
-        <NavItem to="/pm-planner" icon={<BarChart3 />} label="PM Planner" />
-        <NavItem to="/work-orders" icon={<List />} label="Work Orders" />
-        <NavItem to="/reports" icon={<FileText />} label="Reports" />
-        <NavItem to="/settings" icon={<SettingsIcon />} label="Settings" />
-      </nav>
+        {/* Navigation */}
+        <nav className="py-4">
+          <NavItem to="/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
+          <NavItem to="/work-orders" icon={<List size={20} />} label="Work Orders" />
+          <NavItem to="/requests" icon={<MessageCircle size={20} />} label="Requests" />
+          <NavItem to="/pm-planner" icon={<BarChart3 size={20} />} label="PM Planner" />
+          <NavItem to="/assets" icon={<Tool size={20} />} label="Assets" />
+          <NavItem to="/locations" icon={<Map size={20} />} label="Locations" />
+          <NavItem to="/inventory" icon={<Package size={20} />} label="Parts Inventory" />
+          <NavItem to="/teams" icon={<Users size={20} />} label="Teams/People" />
+          <NavItem to="/reports" icon={<FileText size={20} />} label="Reports" />
+          <NavItem to="/settings" icon={<Settings size={20} />} label="Settings" />
+        </nav>
+      </aside>
 
-      {/* ✅ Contact Support Section */}
-      <div className="p-6 border-t text-gray-600 text-sm">
-        <p>Need Help?</p>
-        <a href="mailto:support@arctecfox.com" className="text-blue-500 hover:underline">
-          Contact Support
-        </a>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Header */}
+        <header className="h-16 bg-white border-b flex items-center justify-between px-6">
+          <div className="flex items-center">
+            <h1 className="text-xl font-semibold text-gray-800">Monthly Reports</h1>
+          </div>
+          <div className="flex items-center space-x-4">
+            <button className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+              Export Data
+            </button>
+          </div>
+        </header>
+
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-auto p-6">
+          <Outlet />
+        </main>
       </div>
-    </aside>
+    </div>
   );
 };
 
-// ✅ Sidebar Navigation Item
 const NavItem = ({ to, icon, label }) => (
   <NavLink
     to={to}
-    end
     className={({ isActive }) =>
-      `flex items-center gap-4 px-4 py-3 rounded-lg transition duration-300 ${
+      `flex items-center px-6 py-3 text-sm ${
         isActive 
-          ? "bg-blue-100 text-blue-700 font-semibold"
-          : "hover:bg-gray-200 hover:text-gray-900 text-gray-600"
+          ? "bg-blue-600 text-white" 
+          : "text-gray-300 hover:bg-gray-800"
       }`
     }
   >
-    <span className="w-6 h-6">{icon}</span>
-    <span className="text-lg">{label}</span>
+    <span className="mr-3">{icon}</span>
+    <span>{label}</span>
   </NavLink>
 );
 
-// ✅ Top Navigation Bar with Search and User Info
-const TopBar = () => {
-  return (
-    <header className="fixed top-0 left-72 right-0 h-16 bg-white shadow-md flex items-center px-6 border-b z-10">
-      {/* 🔍 Search Bar */}
-      <div className="flex items-center bg-gray-100 px-4 py-2 rounded-lg w-96">
-        <Search className="w-5 h-5 text-gray-500" />
-        <input 
-          type="text" 
-          placeholder="Search..." 
-          className="bg-transpare
+export default MainLayout;
