@@ -4,13 +4,8 @@ import {
   BarChart3, 
   Settings, 
   FileText, 
-  List, 
   LayoutDashboard,
-  MessageCircle,
-  Wrench,  
-  Map,
-  Package,
-  Users,
+  List,
   User,
   LogOut
 } from "lucide-react";
@@ -18,35 +13,29 @@ import {
 const MainLayout = () => {
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <aside className="w-64 bg-[#1a2236] text-white flex flex-col">
+      {/* ✅ Sidebar */}
+      <aside className="w-64 bg-[#0A192F] text-white flex flex-col shadow-lg">
         {/* ✅ Logo Section */}
         <div className="h-20 flex items-center justify-center px-6 border-b border-gray-700">
-          <img src="/af-logo.jpg" alt="ArcTecFox PM" className="h-14 w-auto" />
+          <img src="/af-logo.jpg" alt="ArcTecFox PM" className="h-12 w-auto object-contain" />
         </div>
 
         {/* ✅ Navigation */}
         <nav className="py-4 space-y-2">
           <NavItem to="/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
-          <NavItem to="/work-orders" icon={<List size={20} />} label="Work Orders" />
-          <NavItem to="/requests" icon={<MessageCircle size={20} />} label="Requests" />
           <NavItem to="/pm-planner" icon={<BarChart3 size={20} />} label="PM Planner" />
-          <NavItem to="/assets" icon={<Wrench size={20} />} label="Assets" />
-          <NavItem to="/locations" icon={<Map size={20} />} label="Locations" />
-          <NavItem to="/inventory" icon={<Package size={20} />} label="Parts Inventory" />
-          <NavItem to="/teams" icon={<Users size={20} />} label="Teams/People" />
-          <NavItem to="/reports" icon={<FileText size={20} />} label="Reports" />
+          <NavItem to="/work-orders" icon={<List size={20} />} label="Work Orders" />
           <NavItem to="/settings" icon={<Settings size={20} />} label="Settings" />
         </nav>
       </aside>
 
-      {/* Main Content */}
+      {/* ✅ Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* ✅ Top Header with Account Management */}
-        <header className="h-16 bg-white border-b flex items-center justify-between px-6">
-          <h1 className="text-xl font-semibold text-gray-800">Monthly Reports</h1>
+        {/* ✅ Top Header */}
+        <header className="h-16 bg-white border-b flex items-center justify-between px-6 shadow">
+          <h1 className="text-xl font-semibold text-gray-800">ArcTecFox PM</h1>
 
-          {/* ✅ Account Section */}
+          {/* ✅ User Section */}
           <div className="flex items-center space-x-6">
             <User className="w-6 h-6 text-gray-700" />
             <span className="text-gray-700 font-medium">Welcome, User</span>
