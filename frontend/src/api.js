@@ -2,9 +2,10 @@ import axios from "axios";
 
 const API_URL = `${window.location.protocol}//${window.location.hostname}:9000`;
 
+// Fetch Asset Data
 export const fetchAssets = async () => {
   try {
-    console.log("📡 Fetching assets...");
+    console.log("📡 Fetching assets from:", `${API_URL}/assets`);
     const response = await axios.get(`${API_URL}/assets`);
     return response.data || [];
   } catch (error) {
@@ -13,12 +14,24 @@ export const fetchAssets = async () => {
   }
 };
 
-// ✅ Temporary Mock Data for Dashboard Metrics (Replace with Supabase later)
+// Fetch Company Metrics (Example Implementation)
 export const fetchMetrics = async () => {
-  return {
-    totalAssets: 12,  // Mock total assets
-    activePMPlans: 5,  // Mock active PM plans
-    nextPMTask: "2024-04-10", // Mock next PM date
-    locations: ["Plant A", "Plant B"], // Mock locations
-  };
+  try {
+    console.log("📡 Fetching company metrics from:", `${API_URL}/metrics`);
+    const response = await axios.get(`${API_URL}/metrics`);
+    return response.data || {
+      totalAssets: 0,
+      activePMPlans: 0,
+      nextPMTask: "N/A",
+      locations: [],
+    };
+  } catch (error) {
+    console.error("❌ Error fetching metrics:", error);
+    return {
+      totalAssets: 0,
+      activePMPlans: 0,
+      nextPMTask: "N/A",
+      locations: [],
+    };
+  }
 };

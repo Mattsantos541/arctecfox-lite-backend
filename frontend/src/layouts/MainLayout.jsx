@@ -22,7 +22,7 @@ const MainLayout = () => {
 
         {/* ✅ Navigation */}
         <nav className="py-4 space-y-2">
-          <NavItem to="/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" />
+          <NavItem to="/company-overview" icon={<LayoutDashboard />} label="Company Overview" />
           <NavItem to="/pm-planner" icon={<BarChart3 size={20} />} label="PM Planner" />
           <NavItem to="/work-orders" icon={<List size={20} />} label="Work Orders" />
           <NavItem to="/settings" icon={<Settings size={20} />} label="Settings" />

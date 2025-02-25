@@ -33,6 +33,16 @@ async def get_all_assets():
         logger.error(f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/metrics")
+async def get_metrics():
+    assets = get_assets()
+    return {
+        "totalAssets": len(assets),
+        "activePMPlans": 5,  # Placeholder (Replace with actual logic)
+        "nextPMTask": "2024-06-15",
+        "locations": list(set(asset["location"] for asset in assets if "location" in asset))
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

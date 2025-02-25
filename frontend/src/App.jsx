@@ -1,24 +1,29 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
-import Dashboard from "./pages/Dashboard";
+import CompanyOverview from "./pages/CompanyOverview"; // Updated name
+import Login from "./pages/Login";
 import PMPlanner from "./pages/PMPlanner";
 import WorkOrders from "./pages/WorkOrders";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 
-export default function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<MainLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/pm-planner" element={<PMPlanner />} />
-          <Route path="/work-orders" element={<WorkOrders />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/settings" element={<Settings />} />
-        </Route>
-      </Routes>
-    </Router>
-  );
+function App() {
+    return (
+        <Router>
+            <MainLayout>
+                <Routes>
+                    <Route path="/" element={<CompanyOverview />} /> {/* Default to Company Overview */}
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/company-overview" element={<CompanyOverview />} />
+                    <Route path="/pm-planner" element={<PMPlanner />} />
+                    <Route path="/work-orders" element={<WorkOrders />} />
+                    <Route path="/reports" element={<Reports />} />
+                    <Route path="/settings" element={<Settings />} />
+                </Routes>
+            </MainLayout>
+        </Router>
+    );
 }
+
+export default App;
