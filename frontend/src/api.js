@@ -1,9 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import axios from "axios";
 
-// 🔹 Supabase Credentials (Replace with your actual keys)
-const SUPABASE_URL = "https://your-project-url.supabase.co"; // Replace with your Supabase URL
-const SUPABASE_ANON_KEY = "your-anon-key"; // Replace with your Supabase API Key
+// 🔹 Supabase Credentials
+// For development using environment variables (safer)
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://your-project-url.supabase.co";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "your-anon-key";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
