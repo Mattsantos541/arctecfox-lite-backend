@@ -1,15 +1,17 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signIn, signUp } from "../api";
+import { signIn, signUp } from "../api"; // Make sure api.js is set up
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
     try {
       if (isSignUp) {
         await signUp(email, password);
@@ -17,17 +19,21 @@ function Login() {
         await signIn(email, password);
       }
       navigate("/company-overview"); // Redirect after login
-    } catch (error) {
-      console.error("❌ Authentication Error:", error.message);
+    } catch (err) {
+      setError(err.message);
+      console.error("❌ Authentication Error:", err.message);
     }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md space-y-8 rounded-xl bg-white p-10 shadow">
+      <div className="w-full max-w-md space-y-8 rounded-xl bg-white p-10 shadow-md">
         <h2 className="text-center text-3xl font-bold text-gray-900">
           {isSignUp ? "Create an Account" : "Sign In"}
         </h2>
+
+        {error && <p className="text-red-500 text-center">{error}</p>}
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm">
             <input
@@ -54,6 +60,7 @@ function Login() {
             {isSignUp ? "Sign Up" : "Sign In"}
           </button>
         </form>
+
         <button
           onClick={() => setIsSignUp(!isSignUp)}
           className="text-blue-500 text-sm mt-4"
