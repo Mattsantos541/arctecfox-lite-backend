@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { NavLink, Outlet, Link } from "react-router-dom";
+import { getCurrentUser, signOut } from "../api";
 import { 
   BarChart3, 
   Settings, 
@@ -9,10 +10,17 @@ import {
   User,
   LogOut
 } from "lucide-react";
-import { useAuth } from "../hooks/useAuth"; // Ensure you have an auth hook
 
 const MainLayout = () => {
-  const { user, logout } = useAuth(); // Get user auth state
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+    };
+    fetchUser();
+  }, []);
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -46,7 +54,7 @@ const MainLayout = () => {
                 <span className="text-gray-700 font-medium">Welcome, {user.email}</span>
                 <button 
                   className="flex items-center gap-2 bg-red-500 px-3 py-2 rounded-md text-white hover:bg-red-700 transition duration-300"
-                  onClick={logout}
+                  onClick={signOut}
                 >
                   <LogOut className="w-5 h-5" />
                   <span>Logout</span>
