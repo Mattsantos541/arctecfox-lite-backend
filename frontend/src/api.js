@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import axios from "axios";
 
-// 🔹 Load Environment Variables Safely (No Hardcoded Keys)
+// 🔹 Load Environment Variables
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -11,46 +11,65 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// 🔹 Backend API URL (For fetching assets & metrics)
-const API_URL = `${window.location.protocol}//${window.location.hostname}:9000`;
-
 /** ======================
- *  🔹 AUTHENTICATION METHODS (Fixed Sign Up)
+ *  🔹 AUTHENTICATION METHODS
  *  ====================== */
 
-// ✅ Sign Up User & Insert into public.users
-export const signUp = async (email, password, fullName, industry, companySize) => {
+// ✅ Sign Up User & Ensure Company Exists
+export const signUp = async (email, password, fullName, companyName, industry, companySize) => {
   // Step 1: Create user in auth.users (handled by Supabase)
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) throw error;
+  const user = data.user;
 
-  const user = data?.user; // Get the created user
+  if (!user) throw new Error("User creation failed");
 
-  // Step 2: Insert into public.users table (if user was created)
-  if (user) {
-    const { error: insertError } = await supabase
-      .from("users") // Make sure this matches your Supabase table name
-      .insert([
-        {
-          id: user.id, // Matches auth.users UUID
-          email,
-          full_name: fullName,
-          industry,
-          company_size: companySize,
-          created_at: new Date().toISOString(),
-        },
-      ]);
+  // Step 2: Check if company already exists
+  let { data: existingCompany, error: companyError } = await supabase
+    .from("companies")
+    .select("id")
+    .eq("name", companyName)
+    .single();
 
-    if (insertError) {
-      console.error("❌ Error inserting user into public.users:", insertError.message);
-      throw insertError;
-    }
+  // Step 3: If company does not exist, create it
+  let companyId;
+  if (!existingCompany) {
+    const { data: newCompany, error: createCompanyError } = await supabase
+      .from("companies")
+      .insert([{ name: companyName, industry, company_size: companySize }])
+      .select("id")
+      .single();
+
+    if (createCompanyError) throw createCompanyError;
+    companyId = newCompany.id;
+  } else {
+    companyId = existingCompany.id;
+  }
+
+  // Step 4: Insert user into public.users with company details
+  const { error: insertError } = await supabase
+    .from("users")
+    .insert([
+      {
+        id: user.id, // Matches Supabase auth.user ID
+        email,
+        full_name: fullName,
+        company_id: companyId, // Foreign Key
+        company_name: companyName, // ✅ Store Company Name
+        industry,
+        company_size: companySize,
+      },
+    ]);
+
+  if (insertError) {
+    console.error("❌ Error inserting user into public.users:", insertError.message);
+    throw insertError;
   }
 
   return user;
 };
 
-// ✅ Get User Profile from `public.users`
+// ✅ Get User Data from public.users
 export const getUserProfile = async (userId) => {
   const { data, error } = await supabase
     .from("users")
@@ -69,7 +88,6 @@ export const getUserProfile = async (userId) => {
 // ✅ Sign In User
 export const signIn = async (email, password) => {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
   if (error) throw error;
   return data.user;
 };
@@ -85,44 +103,6 @@ export const getCurrentUser = async () => {
   const { data, error } = await supabase.auth.getUser();
   if (error) return null;
   return data?.user || null;
-};
-
-/** ======================
- *  🔹 DATA FETCHING METHODS
- *  ====================== */
-
-// ✅ Fetch Asset Data
-export const fetchAssets = async () => {
-  try {
-    console.log("📡 Fetching assets from:", `${API_URL}/assets`);
-    const response = await axios.get(`${API_URL}/assets`);
-    return response.data || [];
-  } catch (error) {
-    console.error("❌ Error fetching assets:", error);
-    return [];
-  }
-};
-
-// ✅ Fetch Company Metrics
-export const fetchMetrics = async () => {
-  try {
-    console.log("📡 Fetching company metrics from:", `${API_URL}/metrics`);
-    const response = await axios.get(`${API_URL}/metrics`);
-    return response.data || {
-      totalAssets: 0,
-      activePMPlans: 0,
-      nextPMTask: "N/A",
-      locations: [],
-    };
-  } catch (error) {
-    console.error("❌ Error fetching metrics:", error);
-    return {
-      totalAssets: 0,
-      activePMPlans: 0,
-      nextPMTask: "N/A",
-      locations: [],
-    };
-  }
 };
 
 export default supabase;
