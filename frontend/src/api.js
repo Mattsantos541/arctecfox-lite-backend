@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import axios from "axios";
 
-// 🔹 Load Environment Variables Safely
+// 🔹 Load Environment Variables Safely (No Hardcoded Keys)
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -15,96 +15,76 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const API_URL = `${window.location.protocol}//${window.location.hostname}:9000`;
 
 /** ======================
- *  🔹 AUTHENTICATION METHODS
+ *  🔹 AUTHENTICATION METHODS (Fixed Sign Up)
  *  ====================== */
 
 // ✅ Sign Up User & Insert into public.users
 export const signUp = async (email, password, fullName, industry, companySize) => {
-  try {
-    // Step 1: Create user in auth.users (handled by Supabase)
-    const { data, error } = await supabase.auth.signUp({ email, password });
+  // Step 1: Create user in auth.users (handled by Supabase)
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) throw error;
 
-    if (error) throw new Error(`Sign-up Error: ${error.message}`);
-    const user = data.user;
+  const user = data?.user; // Get the created user
 
-    // Step 2: Insert user details into public.users
-    if (user) {
-      const { error: insertError } = await supabase
-        .from("users")
-        .insert([
-          {
-            auth_id: user.id, // Link to auth.users
-            email,
-            full_name: fullName,
-            industry,
-            company_size: companySize,
-            created_at: new Date().toISOString(),
-          },
-        ]);
+  // Step 2: Insert into public.users table (if user was created)
+  if (user) {
+    const { error: insertError } = await supabase
+      .from("users") // Make sure this matches your Supabase table name
+      .insert([
+        {
+          id: user.id, // Matches auth.users UUID
+          email,
+          full_name: fullName,
+          industry,
+          company_size: companySize,
+          created_at: new Date().toISOString(),
+        },
+      ]);
 
-      if (insertError) {
-        console.error("❌ Error inserting user into public.users:", insertError.message);
-        throw new Error(`Database Insert Error: ${insertError.message}`);
-      }
+    if (insertError) {
+      console.error("❌ Error inserting user into public.users:", insertError.message);
+      throw insertError;
     }
-
-    return user;
-  } catch (err) {
-    console.error("❌ Sign-up Failed:", err.message);
-    throw err;
   }
+
+  return user;
+};
+
+// ✅ Get User Profile from `public.users`
+export const getUserProfile = async (userId) => {
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", userId)
+    .single();
+
+  if (error) {
+    console.error("❌ Error fetching user profile:", error.message);
+    return null;
+  }
+
+  return data;
 };
 
 // ✅ Sign In User
 export const signIn = async (email, password) => {
-  try {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw new Error(`Sign-in Error: ${error.message}`);
-    return data.user;
-  } catch (err) {
-    console.error("❌ Sign-in Failed:", err.message);
-    throw err;
-  }
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) throw error;
+  return data.user;
 };
 
 // ✅ Sign Out User
 export const signOut = async () => {
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw new Error(`Sign-out Error: ${error.message}`);
-  } catch (err) {
-    console.error("❌ Sign-out Failed:", err.message);
-    throw err;
-  }
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
 };
 
 // ✅ Get Current User
 export const getCurrentUser = async () => {
-  try {
-    const { data, error } = await supabase.auth.getUser();
-    if (error) return null;
-    return data?.user || null;
-  } catch (err) {
-    console.error("❌ Error fetching current user:", err.message);
-    return null;
-  }
-};
-
-// ✅ Get User Profile (From public.users)
-export const getUserProfile = async (userId) => {
-  try {
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("auth_id", userId)
-      .single();
-
-    if (error) throw new Error(`User Profile Fetch Error: ${error.message}`);
-    return data;
-  } catch (err) {
-    console.error("❌ Error fetching user profile:", err.message);
-    return null;
-  }
+  const { data, error } = await supabase.auth.getUser();
+  if (error) return null;
+  return data?.user || null;
 };
 
 /** ======================
