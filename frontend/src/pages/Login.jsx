@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signIn, signUp } from "../api";
+import { signIn, signUp } from "../api"; // Ensure this import is correct
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [fullName, setFullName] = useState(""); 
-  const [companyName, setCompanyName] = useState(""); 
+  const [fullName, setFullName] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [industry, setIndustry] = useState("");
   const [companySize, setCompanySize] = useState("1-10");
   const [isSignUp, setIsSignUp] = useState(false);
@@ -68,9 +68,25 @@ function Login() {
               </select>
             </>
           )}
+          <input type="email" required className="block w-full p-3 border rounded-md"
+            placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
           <input type="password" required className="block w-full p-3 border rounded-md"
-            placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+            placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          {isSignUp && (
+            <input type="password" required className="block w-full p-3 border rounded-md"
+              placeholder="Confirm Password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+          )}
+          <button type="submit" disabled={loading} className="w-full p-3 bg-blue-600 text-white rounded-md">
+            {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
+          </button>
         </form>
+
+        <p className="text-center">
+          {isSignUp ? "Already have an account? " : "Don't have an account? "}
+          <button onClick={() => setIsSignUp(!isSignUp)} className="text-blue-600">
+            {isSignUp ? "Sign In" : "Sign Up"}
+          </button>
+        </p>
       </div>
     </div>
   );
