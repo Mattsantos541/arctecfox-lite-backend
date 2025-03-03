@@ -91,5 +91,25 @@ function Login() {
     </div>
   );
 }
+const handleSubmit = async (e) => {
+ e.preventDefault();
+ setError(null);
+ setLoading(true);
+ try {
+   if (isSignUp) {
+     await signUp(email, password, fullName, industry, companySize, companyName);
+     alert("✅ Sign-up successful! Please log in.");
+     setIsSignUp(false); // Switch to login form
+   } else {
+     await signIn(email, password);
+     navigate("/company-overview"); // Redirect after login
+   }
+ } catch (err) {
+   setError(err.message);
+   console.error("❌ Authentication Error:", err.message);
+ } finally {
+   setLoading(false);
+ }
+};
 
 export default Login;

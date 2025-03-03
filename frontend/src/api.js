@@ -45,6 +45,30 @@ export const signUp = async (email, password, fullName, companyName, industry, c
     if (companyError && companyError.code !== "PGRST116") { // Ignore "No rows found" error
       throw companyError;
     }
+    export const signUp = async (email, password, fullName, industry, companySize, companyName) => {
+     const { data, error } = await supabase.auth.signUp({ email, password });
+     if (error) throw error;
+     const user = data.user;
+     // Step 2: Insert user data into the "users" table
+     if (user) {
+       const { error: insertError } = await supabase
+         .from("users")
+         .insert([
+           {
+             auth_id: user.id,
+             email,
+             full_name: fullName,
+             industry,
+             company_size: companySize,
+             company_name: companyName, // Include company name
+           },
+         ]);
+       if (insertError) {
+         console.error("❌ Error inserting user into users table:", insertError.message);
+         throw insertError;
+       }
+     }
+    
 
     // Step 3: If company does not exist, create it
     let companyId;
