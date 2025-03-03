@@ -1,132 +1,83 @@
-import { createClient } from "@supabase/supabase-js";
-import axios from "axios";
+import { createClient } from '@supabase/supabase-js';
 
-// 🔹 Load Environment Variables
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Initialize Supabase client
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+if (!supabaseUrl || !supabaseAnonKey) {
   console.error("❌ Supabase credentials are missing. Check your .env file!");
 }
 
-// Initialize Supabase client
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-/** ======================
- *  🔹 AUTHENTICATION METHODS
- *  ====================== */
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 /**
- * ✅ Sign Up User & Ensure Company Exists
+ * ✅ Get Current User
+ * @returns {Promise<Object|null>} - Current user or null
+ */
+export const getCurrentUser = async () => {
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) return null;
+    return data?.user || null;
+  } catch (error) {
+    console.error("❌ Error getting current user:", error.message);
+    return null;
+  }
+};
+
+/**
+ * ✅ Sign Up User
  * @param {string} email - User's email
  * @param {string} password - User's password
  * @param {string} fullName - User's full name
- * @param {string} companyName - Company name
- * @param {string} industry - Industry of the company
- * @param {string} companySize - Size of the company
+ * @param {string} industry - User's industry
+ * @param {string} companySize - User's company size
+ * @param {string} companyName - User's company name
  * @returns {Promise<Object>} - Supabase user object
  */
-export const signUp = async (email, password, fullName, companyName, industry, companySize) => {
+export const signUp = async (email, password, fullName, industry, companySize, companyName) => {
   try {
-    // Step 1: Create user in auth.users (handled by Supabase)
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          industry,
+          company_size: companySize,
+          company_name: companyName
+        }
+      }
+    });
+
     if (error) throw error;
     const user = data.user;
 
-    if (!user) throw new Error("User creation failed");
+    // Insert user data into the "users" table
+    if (user) {
+      const { error: insertError } = await supabase
+        .from("users")
+        .insert([
+          {
+            auth_id: user.id,
+            email,
+            full_name: fullName,
+            industry,
+            company_size: companySize,
+            company_name: companyName,
+          },
+        ]);
 
-    // Step 2: Check if company already exists
-    let { data: existingCompany, error: companyError } = await supabase
-      .from("companies")
-      .select("id")
-      .eq("name", companyName)
-      .single();
-
-    if (companyError && companyError.code !== "PGRST116") { // Ignore "No rows found" error
-      throw companyError;
+      if (insertError) {
+        console.error("❌ Error inserting user into users table:", insertError.message);
+        throw insertError;
+      }
     }
-    export const signUp = async (email, password, fullName, industry, companySize, companyName) => {
-     const { data, error } = await supabase.auth.signUp({ email, password });
-     if (error) throw error;
-     const user = data.user;
-     // Step 2: Insert user data into the "users" table
-     if (user) {
-       const { error: insertError } = await supabase
-         .from("users")
-         .insert([
-           {
-             auth_id: user.id,
-             email,
-             full_name: fullName,
-             industry,
-             company_size: companySize,
-             company_name: companyName, // Include company name
-           },
-         ]);
-       if (insertError) {
-         console.error("❌ Error inserting user into users table:", insertError.message);
-         throw insertError;
-       }
-     }
-    
-
-    // Step 3: If company does not exist, create it
-    let companyId;
-    if (!existingCompany) {
-      const { data: newCompany, error: createCompanyError } = await supabase
-        .from("companies")
-        .insert([{ name: companyName, industry, company_size: companySize }])
-        .select("id")
-        .single();
-
-      if (createCompanyError) throw createCompanyError;
-      companyId = newCompany.id;
-    } else {
-      companyId = existingCompany.id;
-    }
-
-    // Step 4: Insert user into public.users with company details
-    const { error: insertError } = await supabase
-      .from("users")
-      .insert([
-        {
-          id: user.id, // Matches Supabase auth.user ID
-          email,
-          full_name: fullName,
-          company_id: companyId, // Foreign Key
-          company_name: companyName, // ✅ Store Company Name
-          industry,
-          company_size: companySize,
-        },
-      ]);
-
-    if (insertError) throw insertError;
 
     return user;
   } catch (error) {
     console.error("❌ Error during sign-up:", error.message);
     throw error;
-  }
-};
-
-/**
- * ✅ Get User Data from public.users
- * @param {string} userId - User's ID
- * @returns {Promise<Object|null>} - User profile data or null if not found
- */
-export const getUserProfile = async (userId) => {
-  try {
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", userId)
-      .single();
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error("❌ Error fetching user profile:", error.message);
-    return null;
   }
 };
 
@@ -161,7 +112,6 @@ export const signOut = async () => {
   }
 };
 
-
 /**
  * ✅ Fetch Assets
  * @returns {Promise<Array>} - List of assets
@@ -169,48 +119,62 @@ export const signOut = async () => {
 export const fetchAssets = async () => {
   try {
     const { data, error } = await supabase
-      .from("assets") // Replace with your actual table name
+      .from("assets")
       .select("*");
 
     if (error) throw error;
-    return data;
+    return data || [];
   } catch (error) {
     console.error("❌ Error fetching assets:", error.message);
-    throw error;
+    return [];
   }
 };
 
-
 /**
  * ✅ Fetch Metrics
- * @returns {Promise<Array>} - List of metrics
+ * @returns {Promise<Object>} - Metrics data
  */
 export const fetchMetrics = async () => {
   try {
     const { data, error } = await supabase
-      .from("metrics") // Replace with your actual table name
+      .from("metrics")
       .select("*");
 
     if (error) throw error;
-    return data;
+    return data || {
+      totalAssets: 0,
+      activePMPlans: 0,
+      nextPMTask: "N/A",
+      locations: []
+    };
   } catch (error) {
     console.error("❌ Error fetching metrics:", error.message);
-    throw error;
+    return {
+      totalAssets: 0,
+      activePMPlans: 0,
+      nextPMTask: "N/A",
+      locations: []
+    };
   }
 };
 
 /**
- * ✅ Get Current User
- * @returns {Promise<Object|null>} - Supabase user object or null if not authenticated
+ * ✅ Create Work Order
+ * @param {Object} workOrderData - Work order data
+ * @returns {Promise<Object>} - Created work order
  */
-export const getCurrentUser = async () => {
+export const createWorkOrder = async (workOrderData) => {
   try {
-    const { data, error } = await supabase.auth.getUser();
+    const { data, error } = await supabase
+      .from("work_orders")
+      .insert([workOrderData])
+      .select();
+
     if (error) throw error;
-    return data?.user || null;
+    return data;
   } catch (error) {
-    console.error("❌ Error fetching current user:", error.message);
-    return null;
+    console.error("❌ Error creating work order:", error.message);
+    throw error;
   }
 };
 
