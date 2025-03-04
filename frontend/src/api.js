@@ -1,180 +1,149 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// 🔹 Load Environment Variables
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.error("❌ Supabase credentials are missing. Check your .env file!");
 }
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/**
- * ✅ Get Current User
- * @returns {Promise<Object|null>} - Current user or null
- */
+/** ======================
+ *  🔹 AUTHENTICATION METHODS (Email Confirmation Required)
+ *  ====================== */
+
+// ✅ Sign Up User (Triggers Email Confirmation)
+export const signUp = async (email, password) => {
+  const { data, error } = await supabase.auth.signUp({ email, password });
+
+  if (error) throw error;
+
+  return data.user; // User must confirm email before login
+};
+
+// ✅ Sign In User (Only works after email is confirmed)
+export const signIn = async (email, password) => {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) throw error;
+  return data.user;
+};
+
+// ✅ Sign Out User
+export const signOut = async () => {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+};
+
+// ✅ Get Current User (Handles null case properly)
 export const getCurrentUser = async () => {
-  try {
-    const { data, error } = await supabase.auth.getUser();
-    if (error) return null;
-    return data?.user || null;
-  } catch (error) {
-    console.error("❌ Error getting current user:", error.message);
+  const { data, error } = await supabase.auth.getUser();
+  if (error) return null;
+  return data?.user || null;
+};
+
+/** ======================
+ *  🔹 PROFILE COMPLETION METHODS
+ *  ====================== */
+
+// ✅ Complete Profile (Stores User in `public.users` after email confirmation)
+export const completeProfile = async (fullName, companyName, industry, companySize) => {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new Error("User not authenticated. Please log in.");
+  }
+
+  // Step 1: Insert company (if not already created)
+  let companyId;
+  const { data: company, error: companyError } = await supabase
+    .from("companies")
+    .select("id")
+    .eq("name", companyName)
+    .single();
+
+  if (companyError) {
+    const { data: newCompany, error: newCompanyError } = await supabase
+      .from("companies")
+      .insert([{ name: companyName, industry, company_size: companySize }])
+      .select("id")
+      .single();
+
+    if (newCompanyError) throw newCompanyError;
+    companyId = newCompany.id;
+  } else {
+    companyId = company.id;
+  }
+
+  // Step 2: Insert user into `public.users`
+  const { error: userInsertError } = await supabase
+    .from("users")
+    .insert([
+      {
+        auth_id: user.id, // Link to auth.users
+        email: user.email,
+        full_name: fullName,
+        company_id: companyId,
+        industry,
+        company_size: companySize,
+      },
+    ]);
+
+  if (userInsertError) {
+    console.error("❌ Error inserting user into public.users:", userInsertError.message);
+    throw userInsertError;
+  }
+
+  return true;
+};
+
+// ✅ Get User Profile (From `public.users`)
+export const getUserProfile = async () => {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("auth_id", user.id)
+    .single();
+
+  if (error) {
+    console.error("❌ Error fetching user profile:", error.message);
     return null;
   }
+
+  return data;
 };
 
-/**
- * ✅ Sign Up User
- * @param {string} email - User's email
- * @param {string} password - User's password
- * @param {string} fullName - User's full name
- * @param {string} industry - User's industry
- * @param {string} companySize - User's company size
- * @param {string} companyName - User's company name
- * @returns {Promise<Object>} - Supabase user object
- */
-export const signUp = async (email, password, fullName, industry, companySize, companyName) => {
-  try {
-    const { data, error } = await supabase.auth.signUp({ 
-      email, 
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-          industry,
-          company_size: companySize,
-          company_name: companyName
-        }
-      }
-    });
+/** ======================
+ *  🔹 DATA FETCHING METHODS
+ *  ====================== */
 
-    if (error) throw error;
-    const user = data.user;
-
-    // Insert user data into the "users" table
-    if (user) {
-      const { error: insertError } = await supabase
-        .from("users")
-        .insert([
-          {
-            auth_id: user.id,
-            email,
-            full_name: fullName,
-            industry,
-            company_size: companySize,
-            company_name: companyName,
-          },
-        ]);
-
-      if (insertError) {
-        console.error("❌ Error inserting user into users table:", insertError.message);
-        throw insertError;
-      }
-    }
-
-    return user;
-  } catch (error) {
-    console.error("❌ Error during sign-up:", error.message);
-    throw error;
-  }
-};
-
-/**
- * ✅ Sign In User
- * @param {string} email - User's email
- * @param {string} password - User's password
- * @returns {Promise<Object>} - Supabase user object
- */
-export const signIn = async (email, password) => {
-  try {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-    return data.user;
-  } catch (error) {
-    console.error("❌ Error during sign-in:", error.message);
-    throw error;
-  }
-};
-
-/**
- * ✅ Sign Out User
- * @returns {Promise<void>}
- */
-export const signOut = async () => {
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-  } catch (error) {
-    console.error("❌ Error during sign-out:", error.message);
-    throw error;
-  }
-};
-
-/**
- * ✅ Fetch Assets
- * @returns {Promise<Array>} - List of assets
- */
+// ✅ Fetch Asset Data
 export const fetchAssets = async () => {
-  try {
-    const { data, error } = await supabase
-      .from("assets")
-      .select("*");
-
-    if (error) throw error;
-    return data || [];
-  } catch (error) {
+  const { data, error } = await supabase.from("assets").select("*");
+  if (error) {
     console.error("❌ Error fetching assets:", error.message);
     return [];
   }
+  return data;
 };
 
-/**
- * ✅ Fetch Metrics
- * @returns {Promise<Object>} - Metrics data
- */
+// ✅ Fetch Company Metrics
 export const fetchMetrics = async () => {
   try {
-    const { data, error } = await supabase
-      .from("metrics")
-      .select("*");
-
-    if (error) throw error;
-    return data || {
-      totalAssets: 0,
-      activePMPlans: 0,
-      nextPMTask: "N/A",
-      locations: []
-    };
-  } catch (error) {
-    console.error("❌ Error fetching metrics:", error.message);
-    return {
-      totalAssets: 0,
-      activePMPlans: 0,
-      nextPMTask: "N/A",
-      locations: []
-    };
-  }
-};
-
-/**
- * ✅ Create Work Order
- * @param {Object} workOrderData - Work order data
- * @returns {Promise<Object>} - Created work order
- */
-export const createWorkOrder = async (workOrderData) => {
-  try {
-    const { data, error } = await supabase
-      .from("work_orders")
-      .insert([workOrderData])
-      .select();
-
-    if (error) throw error;
+    const { data, error } = await supabase.from("metrics").select("*");
+    if (error) {
+      console.error("❌ Error fetching metrics:", error.message);
+      return { totalAssets: 0, activePMPlans: 0, nextPMTask: "N/A", locations: [] };
+    }
     return data;
   } catch (error) {
-    console.error("❌ Error creating work order:", error.message);
-    throw error;
+    console.error("❌ Error fetching metrics:", error);
+    return { totalAssets: 0, activePMPlans: 0, nextPMTask: "N/A", locations: [] };
   }
 };
 
