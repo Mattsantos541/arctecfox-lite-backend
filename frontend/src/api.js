@@ -1,62 +1,42 @@
-import { createClient } from "@supabase/supabase-js";
 
-// 🔹 Load Environment Variables
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+import { createClient } from '@supabase/supabase-js';
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error("❌ Supabase credentials are missing. Check your .env file!");
-}
+// Initialize Supabase client
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// ✅ Get Authenticated User
-export const getCurrentUser = async () => {
-  const { data, error } = await supabase.auth.getUser();
-  if (error) return null;
-  return data?.user || null;
-};
-
-// ✅ Check if User Has Completed Profile
-export const isProfileComplete = async (userId) => {
-  const { data, error } = await supabase
-    .from("users")
-    .select("id")
-    .eq("auth_id", userId)
-    .single();
-
-  return data !== null; // If data exists, profile is complete
-};
-
-// ✅ Redirect User After Email Confirmation
-export const onAuthStateChange = (callback) => {
-  supabase.auth.onAuthStateChange((event, session) => {
-    if (event === "SIGNED_IN" && session?.user) {
-      callback(session.user);
-    }
-  });
-};
-
-export default supabase;
-
-/** ======================
- *  🔹 AUTHENTICATION METHODS (Email Confirmation Required)
+/*  🔹 AUTHENTICATION METHODS
  *  ====================== */
 
 // ✅ Sign Up User (Triggers Email Confirmation)
 export const signUp = async (email, password) => {
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  try {
+    // Step 1: Create user in auth.users (handled by Supabase)
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
 
-  if (error) throw error;
+    if (error) throw error;
 
-  return data.user; // User must confirm email before login
+    console.log("✅ User signup successful:", data);
+    return data.user;
+  } catch (error) {
+    console.error("❌ Signup error:", error.message);
+    throw error;
+  }
 };
 
 // ✅ Sign In User (Only works after email is confirmed)
 export const signIn = async (email, password) => {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
   if (error) throw error;
+
   return data.user;
 };
 
@@ -66,140 +46,140 @@ export const signOut = async () => {
   if (error) throw error;
 };
 
-// ✅ Get Current User (Handles null case properly)
+// ✅ Get Current User
 export const getCurrentUser = async () => {
   const { data, error } = await supabase.auth.getUser();
-  if (error) return null;
-  return data?.user || null;
+  
+  if (error) {
+    console.error("❌ Get user error:", error.message);
+    return null;
+  }
+  
+  if (!data.user) return null;
+  
+  return data.user;
 };
 
-// ✅ Check if user profile is completed
+// ✅ Check if User Profile is Complete
 export const isProfileComplete = async (userId) => {
-  if (!userId) return false;
-  
+  // Check if user exists in the public.users table
   const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("auth_id", userId)
+    .from('users')
+    .select('*')
+    .eq('id', userId)
     .single();
-    
-  if (error || !data) {
-    console.log("Profile not completed:", error?.message || "No user data found");
+
+  if (error) {
+    console.warn("User profile check error:", error.message);
     return false;
   }
-  
-  return true;
+
+  // If we got data back, the profile is complete
+  return !!data;
 };
 
-/** ======================
- *  🔹 PROFILE COMPLETION METHODS
+/*  🔹 PROFILE COMPLETION METHODS
  *  ====================== */
 
-// ✅ Complete Profile (Stores User in `public.users` after email confirmation)
 export const completeProfile = async (fullName, companyName, industry, companySize) => {
-  const user = await getCurrentUser();
+  try {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-  if (!user) {
-    throw new Error("User not authenticated. Please log in.");
-  }
+    if (userError) throw userError;
+    if (!user) throw new Error("No authenticated user found");
 
-  // Step 1: Insert company (if not already created)
-  let companyId;
-  const { data: company, error: companyError } = await supabase
-    .from("companies")
-    .select("id")
-    .eq("name", companyName)
-    .single();
-
-  if (companyError) {
-    const { data: newCompany, error: newCompanyError } = await supabase
-      .from("companies")
-      .insert([{ name: companyName, industry, company_size: companySize }])
-      .select("id")
-      .single();
-
-    if (newCompanyError) throw newCompanyError;
-    companyId = newCompany.id;
-  } else {
-    companyId = company.id;
-  }
-
-  // Step 2: Insert user into `public.users`
-  const { error: userInsertError } = await supabase
-    .from("users")
-    .insert([
-      {
-        auth_id: user.id, // Link to auth.users
-        email: user.email,
+    // Update user metadata in auth.users
+    const { error: updateError } = await supabase.auth.updateUser({
+      data: {
         full_name: fullName,
-        company_id: companyId,
+        company_name: companyName,
+        industry,
+        company_size: companySize
+      }
+    });
+
+    if (updateError) throw updateError;
+
+    // Also store in your users table if you have one
+    const { error: profileError } = await supabase
+      .from('users')
+      .upsert({
+        id: user.id,
+        full_name: fullName,
+        company_name: companyName,
         industry,
         company_size: companySize,
-      },
-    ]);
+        email: user.email
+      });
 
-  if (userInsertError) {
-    console.error("❌ Error inserting user into public.users:", userInsertError.message);
-    throw userInsertError;
+    if (profileError) {
+      console.warn("Error updating users table, but auth data was updated:", profileError.message);
+      // Don't throw here to allow the flow to continue even if this fails
+    }
+
+    console.log("✅ Profile completed successfully");
+    return true;
+  } catch (error) {
+    console.error("❌ Error completing profile:", error.message);
+    throw error;
   }
-
-  return true;
 };
 
 // ✅ Get User Profile (From `public.users`)
 export const getUserProfile = async () => {
   const user = await getCurrentUser();
+  
   if (!user) return null;
-
+  
   const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("auth_id", user.id)
+    .from('users')
+    .select('*')
+    .eq('id', user.id)
     .single();
-
+  
   if (error) {
-    console.error("❌ Error fetching user profile:", error.message);
+    console.error("❌ Get profile error:", error.message);
     return null;
   }
-
+  
   return data;
+};
+
+/*  🔹 DASHBOARD METHODS
+ *  ====================== */
+
+// ✅ Get Dashboard Metrics
+export const getDashboardMetrics = async () => {
+  try {
+    // This would normally fetch metrics from your backend
+    // For now, we'll return mock data
+    const data = {
+      totalAssets: 42,
+      activeAssets: 36,
+      activePMPlans: 12,
+      nextPMTask: "Replace filters on AC units",
+      locations: [
+        { name: "Building A", assetCount: 15 },
+        { name: "Building B", assetCount: 12 },
+        { name: "Warehouse", assetCount: 8 },
+        { name: "Office", assetCount: 7 },
+      ]
+    };
+    
+    return data;
+  } catch (error) {
+    console.error("❌ Error fetching metrics:", error);
+    return { totalAssets: 0, activeAssets: 0, activePMPlans: 0, nextPMTask: "N/A", locations: [] };
+  }
 };
 
 // ✅ Auth state change listener
 export const onAuthStateChange = (callback) => {
   return supabase.auth.onAuthStateChange((event, session) => {
-    console.log("Auth state changed:", event, session?.user?.id);
-    callback(session?.user || null);
+    if (event === 'SIGNED_IN') {
+      callback(session?.user || null);
+    } else if (event === 'SIGNED_OUT') {
+      callback(null);
+    }
   });
 };
-
-/** ======================
- *  🔹 DATA FETCHING METHODS
- *  ====================== */
-
-// ✅ Fetch Asset Data
-export const fetchAssets = async () => {
-  const { data, error } = await supabase.from("assets").select("*");
-  if (error) {
-    console.error("❌ Error fetching assets:", error.message);
-    return [];
-  }
-  return data;
-};
-
-// ✅ Fetch Company Metrics
-export const fetchMetrics = async () => {
-  try {
-    const { data, error } = await supabase.from("metrics").select("*");
-    if (error) {
-      console.error("❌ Error fetching metrics:", error.message);
-      return { totalAssets: 0, activePMPlans: 0, nextPMTask: "N/A", locations: [] };
-    }
-    return data;
-  } catch (error) {
-    console.error("❌ Error fetching metrics:", error);
-    return { totalAssets: 0, activePMPlans: 0, nextPMTask: "N/A", locations: [] };
-  }
-};
-
-export default supabase;

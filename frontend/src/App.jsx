@@ -60,11 +60,14 @@ function AuthRoutes() {
     });
 
     return () => {
-      subscription.subscription.unsubscribe();
+      if (subscription && subscription.subscription) {
+        subscription.subscription.unsubscribe();
+      }
     };
   }, [navigate]);
 
   return null;
+}l;
 }
 
 function App() {
