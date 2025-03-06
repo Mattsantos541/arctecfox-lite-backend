@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { completeProfile } from "../api"; 
+import { completeProfile, getCurrentUser } from "../api";
 
 function CompleteProfile() {
   const [fullName, setFullName] = useState("");
@@ -8,17 +8,33 @@ function CompleteProfile() {
   const [industry, setIndustry] = useState("");
   const [companySize, setCompanySize] = useState("1-10");
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const user = await getCurrentUser();
+      if (!user) {
+        navigate("/login"); // Redirect if not authenticated
+      }
+    };
+    checkUser();
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+    setLoading(true);
+
     try {
       await completeProfile(fullName, companyName, industry, companySize);
-      navigate("/company-overview");
+      alert("✅ Profile completed successfully!");
+      navigate("/company-overview"); // Redirect to dashboard
     } catch (err) {
       setError(err.message);
-      console.error("❌ Profile Completion Error:", err.message);
+      console.error("❌ Error completing profile:", err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -30,13 +46,47 @@ function CompleteProfile() {
         {error && <p className="text-red-500 text-center">{error}</p>}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <input type="text" required className="block w-full p-3 border rounded-md"
-            placeholder="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-          <input type="text" required className="block w-full p-3 border rounded-md"
-            placeholder="Company Name" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
-          <input type="text" required className="block w-full p-3 border rounded-md"
-            placeholder="Industry" value={industry} onChange={(e) => setIndustry(e.target.value)} />
-          <button type="submit" className="w-full p-3 bg-blue-600 text-white rounded-md">Complete Profile</button>
+          <input
+            type="text"
+            required
+            className="block w-full p-3 border rounded-md"
+            placeholder="Full Name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+          />
+          <input
+            type="text"
+            required
+            className="block w-full p-3 border rounded-md"
+            placeholder="Company Name"
+            value={companyName}
+            onChange={(e) => setCompanyName(e.target.value)}
+          />
+          <input
+            type="text"
+            required
+            className="block w-full p-3 border rounded-md"
+            placeholder="Industry (e.g., Construction, Manufacturing)"
+            value={industry}
+            onChange={(e) => setIndustry(e.target.value)}
+          />
+          <select
+            className="block w-full p-3 border rounded-md"
+            value={companySize}
+            onChange={(e) => setCompanySize(e.target.value)}
+          >
+            <option value="1-10">1-10 Employees</option>
+            <option value="11-50">11-50 Employees</option>
+            <option value="51-200">51-200 Employees</option>
+            <option value="201+">201+ Employees</option>
+          </select>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full p-3 bg-blue-600 text-white rounded-md"
+          >
+            {loading ? "Processing..." : "Save & Continue"}
+          </button>
         </form>
       </div>
     </div>
