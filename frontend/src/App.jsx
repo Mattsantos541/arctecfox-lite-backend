@@ -1,5 +1,6 @@
+
 import React, { useEffect, useState } from "react";
-import { BrowserRouter as Router, Route, Routes, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Navigate, useNavigate } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import CompanyOverview from "./pages/CompanyOverview";
 import Login from "./pages/Login";
@@ -17,48 +18,66 @@ function ProtectedRoute({ children }) {
 
   useEffect(() => {
     const checkUser = async () => {
-      const user = await getCurrentUser();
-      if (!user) {
-        navigate("/login"); // Not authenticated → Send to login
-        return;
+      try {
+        const user = await getCurrentUser();
+        if (!user) {
+          navigate("/login"); // Not authenticated → Send to login
+          return;
+        }
+        
+        const profileCompleted = await isProfileComplete(user.id);
+        if (!profileCompleted) {
+          navigate("/complete-profile"); // Profile not completed → Send to profile completion
+          return;
+        }
+        
+        setChecking(false);
+      } catch (error) {
+        console.error("Auth check error:", error);
+        navigate("/login");
       }
-      const profileCompleted = await isProfileComplete(user.id);
-      if (!profileCompleted) {
-        navigate("/complete-profile"); // Profile not completed → Send to profile completion
-        return;
-      }
-      setChecking(false);
     };
 
     checkUser();
   }, [navigate]);
 
-  if (checking) return <div>Loading...</div>;
+  if (checking) return <div className="flex h-screen items-center justify-center">Loading...</div>;
 
   return children;
 }
 
-function App() {
+function AuthRoutes() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    onAuthStateChange(async (user) => {
+    const subscription = onAuthStateChange(async (user) => {
       if (user) {
         const profileCompleted = await isProfileComplete(user.id);
         navigate(profileCompleted ? "/company-overview" : "/complete-profile");
+      } else {
+        navigate("/login");
       }
     });
+
+    return () => {
+      subscription.subscription.unsubscribe();
+    };
   }, [navigate]);
 
+  return null;
+}
+
+function App() {
   return (
     <AuthProvider>
+      <AuthRoutes />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/complete-profile" element={<CompleteProfile />} />
 
         {/* Protected Routes: User must be logged in */}
-        <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-          <Route path="/" element={<CompanyOverview />} />
+        <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+          <Route index element={<Navigate to="/company-overview" replace />} />
           <Route path="/company-overview" element={<CompanyOverview />} />
           <Route path="/pm-planner" element={<PMPlanner />} />
           <Route path="/work-orders" element={<WorkOrders />} />
@@ -70,4 +89,10 @@ function App() {
   );
 }
 
-export default App;
+export default function AppWithRouter() {
+  return (
+    <Router>
+      <App />
+    </Router>
+  );
+}

@@ -73,6 +73,24 @@ export const getCurrentUser = async () => {
   return data?.user || null;
 };
 
+// ✅ Check if user profile is completed
+export const isProfileComplete = async (userId) => {
+  if (!userId) return false;
+  
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("auth_id", userId)
+    .single();
+    
+  if (error || !data) {
+    console.log("Profile not completed:", error?.message || "No user data found");
+    return false;
+  }
+  
+  return true;
+};
+
 /** ======================
  *  🔹 PROFILE COMPLETION METHODS
  *  ====================== */
@@ -145,6 +163,14 @@ export const getUserProfile = async () => {
   }
 
   return data;
+};
+
+// ✅ Auth state change listener
+export const onAuthStateChange = (callback) => {
+  return supabase.auth.onAuthStateChange((event, session) => {
+    console.log("Auth state changed:", event, session?.user?.id);
+    callback(session?.user || null);
+  });
 };
 
 /** ======================

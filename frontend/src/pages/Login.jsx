@@ -28,8 +28,9 @@ function Login() {
         await signUp(email, password);
         setConfirmationMessage("✅ Check your email to confirm your account!");
       } else {
-        await signIn(email, password);
-        navigate("/company-overview");
+        const user = await signIn(email, password);
+        const profileCompleted = await isProfileComplete(user.id);
+        navigate(profileCompleted ? "/company-overview" : "/complete-profile");
       }
     } catch (err) {
       setError(err.message);
