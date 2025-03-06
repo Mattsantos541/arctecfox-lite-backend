@@ -24,14 +24,10 @@ const MainLayout = () => {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* ✅ Sidebar */}
       <aside className="w-64 bg-[#0A192F] text-white flex flex-col shadow-lg">
-        {/* ✅ Logo Section */}
         <div className="h-20 flex items-center justify-center px-6 border-b border-gray-700">
           <img src="/af-logo.jpg" alt="ArcTecFox PM" className="h-12 w-auto object-contain" />
         </div>
-
-        {/* ✅ Navigation */}
         <nav className="py-4 space-y-2">
           <NavItem to="/company-overview" icon={<LayoutDashboard />} label="Company Overview" />
           <NavItem to="/pm-planner" icon={<BarChart3 size={20} />} label="PM Planner" />
@@ -40,13 +36,10 @@ const MainLayout = () => {
         </nav>
       </aside>
 
-      {/* ✅ Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* ✅ Top Header */}
         <header className="h-16 bg-white border-b flex items-center justify-between px-6 shadow">
           <h1 className="text-xl font-semibold text-gray-800">ArcTecFox PM</h1>
 
-          {/* ✅ User Section */}
           <div className="flex items-center space-x-6">
             <User className="w-6 h-6 text-gray-700" />
             {user ? (
@@ -68,7 +61,6 @@ const MainLayout = () => {
           </div>
         </header>
 
-        {/* ✅ Main Content Area */}
         <main className="flex-1 overflow-auto p-6">
           <Outlet />
         </main>
@@ -77,7 +69,6 @@ const MainLayout = () => {
   );
 };
 
-// ✅ Sidebar Navigation Item Component
 const NavItem = ({ to, icon, label }) => (
   <NavLink
     to={to}
