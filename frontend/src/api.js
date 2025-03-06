@@ -1,15 +1,16 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 if (!supabaseUrl || !supabaseKey) {
   console.error("❌ Supabase credentials are missing. Check your .env file!");
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
+
 // ✅ Fetch Assets
 export const fetchAssets = async () => {
   try {
@@ -20,6 +21,20 @@ export const fetchAssets = async () => {
     return data;
   } catch (error) {
     console.error("❌ Error fetching assets:", error.message);
+    throw error;
+  }
+};
+
+// ✅ Fetch Metrics
+export const fetchMetrics = async () => {
+  try {
+    const { data, error } = await supabase
+      .from("metrics")
+      .select("*");
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("❌ Error fetching metrics:", error);
     throw error;
   }
 };
@@ -98,24 +113,18 @@ export const isProfileComplete = async (userId) => {
 };
 
 // ✅ Complete Profile (Insert into `public.users`)
-export const completeProfile = async (fullName, companyName, industry, companySize) => {
+export const completeProfile = async (userId, profileData) => {
   try {
-    const { data: user, error: userError } = await supabase.auth.getUser();
-
-    if (userError) throw userError;
-    if (!user || !user.user) throw new Error("No authenticated user found");
-
-    // Step 1: Insert User Profile into `public.users`
+    // Insert User Profile into `public.users`
     const { error: profileError } = await supabase
       .from("users")
       .upsert([
         {
-          id: user.user.id, // Match auth.users UUID
-          full_name: fullName,
-          company_name: companyName,
-          industry,
-          company_size: companySize,
-          email: user.user.email,
+          id: userId,
+          company_name: profileData.company_name,
+          phone_number: profileData.phone_number,
+          address: profileData.address,
+          industry: profileData.industry,
         },
       ]);
 
@@ -197,5 +206,3 @@ export const onAuthStateChange = (callback) => {
     }
   });
 };
-
-export default supabase;
