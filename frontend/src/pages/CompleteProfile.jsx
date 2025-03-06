@@ -1,35 +1,42 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { completeProfile, getCurrentUser } from "../api";
+import { useAuth } from "../hooks/useAuth";
+import { completeProfile } from "../api";
 
 function CompleteProfile() {
-  const [fullName, setFullName] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [industry, setIndustry] = useState("");
-  const [companySize, setCompanySize] = useState("");
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    company_name: "",
+    phone_number: "",
+    address: "",
+    industry: ""
+  });
 
-  // Check if user is authenticated
-  useEffect(() => {
-    const checkUser = async () => {
-      const user = await getCurrentUser();
-      if (!user) {
-        navigate("/login");
-      }
-    };
-    checkUser();
-  }, [navigate]);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+    setLoading(true);
 
     try {
-      await completeProfile(fullName, companyName, industry, companySize);
+      if (!user) {
+        throw new Error("You must be logged in to complete your profile");
+      }
+
+      // Required fields validation
+      if (!formData.company_name || !formData.phone_number) {
+        throw new Error("Company name and phone number are required");
+      }
+
+      await completeProfile(user.id, formData);
       navigate("/company-overview");
     } catch (err) {
       setError(err.message);
@@ -41,95 +48,79 @@ function CompleteProfile() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-lg space-y-8 rounded-xl bg-white p-10 shadow-md">
+      <div className="w-full max-w-md space-y-8 rounded-xl bg-white p-10 shadow-md">
         <h2 className="text-center text-3xl font-bold text-gray-900">
           Complete Your Profile
         </h2>
         <p className="text-center text-gray-600">
-          Please provide additional information to complete your setup.
+          We need a few more details before you can start using the platform.
         </p>
 
         {error && <p className="text-red-500 text-center">{error}</p>}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div>
-            <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-              Full Name
-            </label>
+            <label className="block text-sm font-medium text-gray-700">Company Name *</label>
             <input
-              id="fullName"
               type="text"
+              name="company_name"
               required
               className="mt-1 block w-full p-3 border rounded-md"
-              placeholder="John Doe"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Your Company Name"
+              value={formData.company_name}
+              onChange={handleChange}
             />
           </div>
-
+          
           <div>
-            <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
-              Company Name
-            </label>
+            <label className="block text-sm font-medium text-gray-700">Phone Number *</label>
             <input
-              id="companyName"
-              type="text"
+              type="tel"
+              name="phone_number"
               required
               className="mt-1 block w-full p-3 border rounded-md"
-              placeholder="ACME Corporation"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="(123) 456-7890"
+              value={formData.phone_number}
+              onChange={handleChange}
             />
           </div>
-
+          
           <div>
-            <label htmlFor="industry" className="block text-sm font-medium text-gray-700">
-              Industry
-            </label>
+            <label className="block text-sm font-medium text-gray-700">Address</label>
+            <input
+              type="text"
+              name="address"
+              className="mt-1 block w-full p-3 border rounded-md"
+              placeholder="123 Main St, City, State, ZIP"
+              value={formData.address}
+              onChange={handleChange}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Industry</label>
             <select
-              id="industry"
-              required
+              name="industry"
               className="mt-1 block w-full p-3 border rounded-md"
-              value={industry}
-              onChange={(e) => setIndustry(e.target.value)}
+              value={formData.industry}
+              onChange={handleChange}
             >
-              <option value="">Select Industry</option>
+              <option value="">Select an industry</option>
               <option value="manufacturing">Manufacturing</option>
+              <option value="construction">Construction</option>
               <option value="healthcare">Healthcare</option>
               <option value="education">Education</option>
               <option value="retail">Retail</option>
-              <option value="construction">Construction</option>
-              <option value="technology">Technology</option>
               <option value="other">Other</option>
             </select>
           </div>
-
-          <div>
-            <label htmlFor="companySize" className="block text-sm font-medium text-gray-700">
-              Company Size
-            </label>
-            <select
-              id="companySize"
-              required
-              className="mt-1 block w-full p-3 border rounded-md"
-              value={companySize}
-              onChange={(e) => setCompanySize(e.target.value)}
-            >
-              <option value="">Select Company Size</option>
-              <option value="1-10">1-10 employees</option>
-              <option value="11-50">11-50 employees</option>
-              <option value="51-200">51-200 employees</option>
-              <option value="201-500">201-500 employees</option>
-              <option value="501+">501+ employees</option>
-            </select>
-          </div>
-
+          
           <button
             type="submit"
             disabled={loading}
-            className="w-full p-3 bg-blue-600 text-white rounded-md"
+            className="w-full p-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
           >
-            {loading ? "Processing..." : "Complete Profile"}
+            {loading ? "Saving..." : "Complete Profile"}
           </button>
         </form>
       </div>

@@ -1,158 +1,161 @@
+
 import { createClient } from '@supabase/supabase-js';
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
-if (!supabaseUrl || !supabaseKey) {
- console.error("❌ Supabase credentials are missing. Check your .env file!");
-}
+import axios from 'axios';
+
+// Initialize Supabase client (Replace with your actual project URL and anon key)
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://yourprojectid.supabase.co';
+const supabaseKey = import.meta.env.VITE_SUPABASE_KEY || 'your-supabase-anon-key';
+
+export const supabase = createClient(supabaseUrl, supabaseKey);
+
 /*  🔹 AUTHENTICATION METHODS
 *  ====================== */
-// ✅ Sign Up User (Triggers Email Confirmation)
+
+// Sign up a new user
 export const signUp = async (email, password) => {
- try {
-   const { data, error } = await supabase.auth.signUp({ email, password });
-   if (error) throw error;
-   console.log("✅ User signup successful:", data);
-   return data.user; // Return the signed-up user
- } catch (error) {
-   console.error("❌ Signup error:", error.message);
-   throw error;
- }
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    
+    if (error) throw error;
+    
+    return data.user;
+  } catch (error) {
+    console.error("❌ Sign up error:", error.message);
+    throw error;
+  }
 };
-// ✅ Sign In User (Only works after email confirmation)
+
+// Sign in existing user
 export const signIn = async (email, password) => {
- try {
-   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-   if (error) throw error;
-   return data.user;
- } catch (error) {
-   console.error("❌ Sign-in error:", error.message);
-   throw error;
- }
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (error) throw error;
+    
+    return data.user;
+  } catch (error) {
+    console.error("❌ Sign in error:", error.message);
+    throw error;
+  }
 };
-// ✅ Sign Out User
+
+// Sign out current user
 export const signOut = async () => {
- try {
-   const { error } = await supabase.auth.signOut();
-   if (error) throw error;
- } catch (error) {
-   console.error("❌ Sign-out error:", error.message);
-   throw error;
- }
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  } catch (error) {
+    console.error("❌ Sign out error:", error.message);
+    throw error;
+  }
 };
-// ✅ Get Current User
+
+// Get Current User
 export const getCurrentUser = async () => {
- try {
-   const { data, error } = await supabase.auth.getUser();
-   if (error) {
-     console.error("❌ Get user error:", error.message);
-     return null;
-   }
-   return data.user || null;
- } catch (error) {
-   console.error("❌ Error getting current user:", error.message);
-   return null;
- }
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    
+    if (error) throw error;
+    
+    return user;
+  } catch (error) {
+    console.error("❌ Error fetching current user:", error.message);
+    return null;
+  }
 };
+
+// Auth state change listener
+export const onAuthStateChange = (callback) => {
+  return supabase.auth.onAuthStateChange((event, session) => {
+    callback(session?.user || null);
+  });
+};
+
 /*  🔹 PROFILE COMPLETION METHODS
 *  ====================== */
-// ✅ Check if User Profile is Complete in `public.users`
+
+// Check if user profile is complete
 export const isProfileComplete = async (userId) => {
- const { data, error } = await supabase
-   .from("users")
-   .select("id")
-   .eq("id", userId)
-   .single();
- return !!data && !error; // Returns true if user profile exists
+  try {
+    if (!userId) return false;
+    
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (error) throw error;
+    
+    // Check if essential profile fields are filled
+    return !!(data && data.company_name && data.phone_number);
+  } catch (error) {
+    console.error("❌ Profile check error:", error.message);
+    return false;
+  }
 };
-// ✅ Complete Profile (Insert into `public.users`)
-export const completeProfile = async (fullName, companyName, industry, companySize) => {
- try {
-   const { data: user, error: userError } = await supabase.auth.getUser();
-   if (userError) throw userError;
-   if (!user || !user.user) throw new Error("No authenticated user found");
-   // Step 1: Insert User Profile into `public.users`
-   const { error: profileError } = await supabase
-     .from("users")
-     .upsert([
-       {
-         id: user.user.id, // Match auth.users UUID
-         full_name: fullName,
-         company_name: companyName,
-         industry,
-         company_size: companySize,
-         email: user.user.email,
-       },
-     ]);
-   if (profileError) {
-     console.error("❌ Error inserting profile:", profileError.message);
-     throw profileError;
-   }
-   console.log("✅ Profile completed successfully");
-   return true;
- } catch (error) {
-   console.error("❌ Error completing profile:", error.message);
-   throw error;
- }
+
+// Complete user profile
+export const completeProfile = async (userId, profileData) => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .upsert({
+        id: userId,
+        ...profileData,
+        updated_at: new Date()
+      })
+      .select();
+    
+    if (error) throw error;
+    
+    return data[0];
+  } catch (error) {
+    console.error("❌ Profile update error:", error.message);
+    throw error;
+  }
 };
-// ✅ Get User Profile (From `public.users`)
-export const getUserProfile = async () => {
- try {
-   const user = await getCurrentUser();
-   if (!user) return null;
-   const { data, error } = await supabase
-     .from("users")
-     .select("*")
-     .eq("id", user.id)
-     .single();
-   if (error) {
-     console.error("❌ Get profile error:", error.message);
-     return null;
-   }
-   return data;
- } catch (error) {
-   console.error("❌ Error fetching profile:", error.message);
-   return null;
- }
-};
-/*  🔹 DASHBOARD METHODS
+
+/*  🔹 DATA FETCHING METHODS
 *  ====================== */
-// ✅ Get Dashboard Metrics
-export const getDashboardMetrics = async () => {
- try {
-   // Mock data (Replace with real API endpoint)
-   return {
-     totalAssets: 42,
-     activeAssets: 36,
-     activePMPlans: 12,
-     nextPMTask: "Replace filters on AC units",
-     locations: [
-       { name: "Building A", assetCount: 15 },
-       { name: "Building B", assetCount: 12 },
-       { name: "Warehouse", assetCount: 8 },
-       { name: "Office", assetCount: 7 },
-     ],
-   };
- } catch (error) {
-   console.error("❌ Error fetching metrics:", error);
-   return {
-     totalAssets: 0,
-     activeAssets: 0,
-     activePMPlans: 0,
-     nextPMTask: "N/A",
-     locations: [],
-   };
- }
+
+// Fetch company metrics
+export const fetchMetrics = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('metrics')
+      .select('*')
+      .limit(1)
+      .single();
+    
+    if (error) throw error;
+    
+    return data;
+  } catch (error) {
+    console.error("❌ Error fetching metrics:", error);
+    return null;
+  }
 };
-// ✅ Auth state change listener
-export const onAuthStateChange = (callback) => {
- return supabase.auth.onAuthStateChange((event, session) => {
-   if (event === "SIGNED_IN") {
-     callback(session?.user || null);
-   } else if (event === "SIGNED_OUT") {
-     callback(null);
-   }
- });
+
+// Fetch company assets
+export const fetchAssets = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('assets')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    return data;
+  } catch (error) {
+    console.error("❌ Error fetching assets:", error);
+    return [];
+  }
 };
-export default supabase;
