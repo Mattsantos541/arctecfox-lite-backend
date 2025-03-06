@@ -10,6 +10,35 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// ✅ Get Authenticated User
+export const getCurrentUser = async () => {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) return null;
+  return data?.user || null;
+};
+
+// ✅ Check if User Has Completed Profile
+export const isProfileComplete = async (userId) => {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id")
+    .eq("auth_id", userId)
+    .single();
+
+  return data !== null; // If data exists, profile is complete
+};
+
+// ✅ Redirect User After Email Confirmation
+export const onAuthStateChange = (callback) => {
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_IN" && session?.user) {
+      callback(session.user);
+    }
+  });
+};
+
+export default supabase;
+
 /** ======================
  *  🔹 AUTHENTICATION METHODS (Email Confirmation Required)
  *  ====================== */

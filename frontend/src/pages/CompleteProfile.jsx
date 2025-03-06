@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { completeProfile, getCurrentUser } from "../api";
 
+
 function CompleteProfile() {
   const [fullName, setFullName] = useState("");
   const [companyName, setCompanyName] = useState("");
