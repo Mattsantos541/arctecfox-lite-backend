@@ -124,7 +124,7 @@ export const completeProfile = async (userId, profileData) => {
           company_name: profileData.company_name,
           phone_number: profileData.phone_number,
           address: profileData.address,
-          industry: profileData.industry,
+          industry: profileData.industryofileData.industry,
         },
       ]);
 

@@ -75,3 +75,70 @@ export function useAuth() {
   }
   return context;
 }
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { signIn, signUp, signOut, getCurrentUser } from "../api";
+
+const AuthContext = createContext();
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkUser = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+        setUser(currentUser);
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    checkUser();
+  }, []);
+
+  // Login function
+  const login = async (email, password) => {
+    try {
+      const loggedInUser = await signIn(email, password);
+      setUser(loggedInUser);
+      return loggedInUser;
+    } catch (error) {
+      console.error("Login error:", error);
+      throw error;
+    }
+  };
+
+  // Register function
+  const register = async (email, password) => {
+    try {
+      const newUser = await signUp(email, password);
+      return newUser;
+    } catch (error) {
+      console.error("Registration error:", error);
+      throw error;
+    }
+  };
+
+  // Logout function
+  const logout = async () => {
+    try {
+      await signOut();
+      setUser(null);
+    } catch (error) {
+      console.error("Logout error:", error);
+      throw error;
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => useContext(AuthContext);
