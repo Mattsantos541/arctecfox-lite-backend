@@ -13,15 +13,18 @@ function CompanyOverview() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const assetData = await fetchAssets();
+        // Fetch assets, ensure it's always an array
+        const assetData = await fetchAssets().catch(() => []);
         setAssets(assetData);
 
-        // If metrics data is not available, use default values
+        // Fetch metrics, fallback to asset count if needed
         const metricsData = await fetchMetrics().catch(() => ({
-          totalAssets: assetData.length || 0,
+          totalAssets: assetData?.length ?? 0,
           activePMPlans: 0, // Placeholder value
           nextPMTask: "N/A",
-          locations: [...new Set(assetData.map(a => a.location || "Unknown"))],
+          locations: assetData?.length
+            ? [...new Set(assetData.map(a => a.location || "Unknown"))]
+            : [],
         }));
 
         setMetrics(metricsData);
@@ -40,16 +43,16 @@ function CompanyOverview() {
 
       {/* Metrics Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <MetricCard title="Total Assets" value={metrics.totalAssets} />
-        <MetricCard title="Active PM Plans" value={metrics.activePMPlans} />
-        <MetricCard title="Next PM Task" value={metrics.nextPMTask} />
+        <MetricCard title="Total Assets" value={metrics.totalAssets ?? 0} />
+        <MetricCard title="Active PM Plans" value={metrics.activePMPlans ?? 0} />
+        <MetricCard title="Next PM Task" value={metrics.nextPMTask ?? "N/A"} />
       </div>
 
       {/* Locations Overview */}
       <div>
         <h2 className="text-xl font-semibold text-gray-800">Locations</h2>
         <ul className="list-disc pl-6 text-gray-700">
-          {metrics.locations.length > 0 ? (
+          {metrics?.locations?.length > 0 ? (
             metrics.locations.map((location, index) => (
               <li key={index}>{location}</li>
             ))
@@ -73,12 +76,12 @@ function CompanyOverview() {
               </tr>
             </thead>
             <tbody>
-              {assets.length > 0 ? (
+              {assets?.length > 0 ? (
                 assets.map((asset) => (
                   <tr key={asset.id} className="border-b hover:bg-gray-50">
                     <td className="p-4">{asset.name}</td>
                     <td className="p-4">{asset.category}</td>
-                    <td className="p-4">{asset.usage_hours} hrs</td>
+                    <td className="p-4">{asset.usage_hours ?? "N/A"} hrs</td>
                     <td className="p-4">{asset.location || "N/A"}</td>
                   </tr>
                 ))
