@@ -120,11 +120,13 @@ export const completeProfile = async (userId, profileData) => {
       .from("users")
       .upsert([
         {
-          id: userId,
+          auth_id: userId,
+          email: profileData.email || '', 
+          full_name: profileData.full_name || '',
+          role: profileData.role || 'user',
           company_name: profileData.company_name,
-          phone_number: profileData.phone_number,
-          address: profileData.address,
-          industry: profileData.industryofileData.industry,
+          industry: profileData.industry,
+          company_size: profileData.company_size || null,
         },
       ]);
 
