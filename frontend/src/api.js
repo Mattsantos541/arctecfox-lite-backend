@@ -45,7 +45,17 @@ export const fetchMetrics = async () => {
 // ✅ Sign Up User (Triggers Email Confirmation)
 export const signUp = async (email, password) => {
   try {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    // Get the current URL to build the redirect URL
+    const baseUrl = window.location.origin;
+    const redirectTo = `${baseUrl}/complete-profile`;
+    
+    const { data, error } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        emailRedirectTo: redirectTo
+      }
+    });
 
     if (error) throw error;
     console.log("✅ User signup successful:", data);
