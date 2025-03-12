@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Input } from "../components/ui/input";  // ✅ Fixed Import
+import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Table } from "../components/ui/table";
 import axios from "axios";
+import { saveAs } from "file-saver";
 
 export default function PMPlanner() {
   const [assetData, setAssetData] = useState({
@@ -15,7 +16,7 @@ export default function PMPlanner() {
     cycles: "",
     environment: "",
   });
-  const [file, setFile] = useState(null);
+
   const [pmPlan, setPmPlan] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -23,19 +24,31 @@ export default function PMPlanner() {
     setAssetData({ ...assetData, [e.target.name]: e.target.value });
   };
 
-  const handleFileUpload = (e) => {
-    setFile(e.target.files[0]);
-  };
-
   const generatePMPlan = async () => {
     setLoading(true);
     try {
-      const response = await axios.post("/api/generate_pm_plan", assetData);
+      const response = await axios.post("http://localhost:9000/api/generate_pm_plan", assetData);
       setPmPlan(response.data.pm_plan);
     } catch (error) {
       console.error("Error generating PM plan:", error);
     }
     setLoading(false);
+  };
+
+  // Convert PM Plan to CSV Format
+  const exportToCSV = () => {
+    if (pmPlan.length === 0) {
+      alert("No PM plan available to export.");
+      return;
+    }
+
+    let csvContent = "Interval,Task,Steps,Reason\n";
+    pmPlan.forEach((task) => {
+      csvContent += `"${task.interval}","${task.task}","${task.steps}","${task.reason}"\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    saveAs(blob, "pm_plan.csv");
   };
 
   return (
@@ -50,32 +63,35 @@ export default function PMPlanner() {
           <Input name="hours" placeholder="Usage Hours" type="number" onChange={handleInputChange} />
           <Input name="cycles" placeholder="Usage Cycles" type="number" onChange={handleInputChange} />
           <Input name="environment" placeholder="Environmental Conditions" onChange={handleInputChange} />
-          <Input type="file" onChange={handleFileUpload} />
           <Button onClick={generatePMPlan} disabled={loading}>
-            {loading ? "Generating..." : "Generate PM Plan"}
+            {loading ? "Generating..." : "Generate AI-Powered PM Plan"}
           </Button>
         </div>
       </Card>
 
-      {/* AI-Powered PM Plan */}
+      {/* AI-Powered PM Plan Table */}
       <Card title="AI-Powered PM Plan" className="mt-6">
-        <Table
-          headers={["Task", "Interval (Hours/Cycles)", "AI Confidence Score", "Edit"]}
-          data={pmPlan.length > 0 ? pmPlan.map((task) => [
-            task.task,
-            task.interval,
-            `${task.confidence}%`,
-            <Button variant="outline">✏️</Button>
-          ]) : [["No PM Plan Generated Yet", "", "", ""]]}
-        />
+        {pmPlan.length > 0 ? (
+          <Table
+            headers={["Interval", "Task", "Steps", "Reason"]}
+            data={pmPlan.map((task) => [
+              task.interval,
+              task.task,
+              task.steps,
+              task.reason,
+            ])}
+          />
+        ) : (
+          <p>No PM Plan Generated Yet</p>
+        )}
         <Button className="mt-4" variant="secondary">Regenerate Plan 🔄</Button>
       </Card>
 
-      {/* Export & Integration */}
+      {/* Export & Integration Section */}
       <Card title="Export & Integration" className="mt-6">
         <div className="flex gap-4">
-          <Button>Download as CSV ⬇️</Button>
-          <Button>Sync to CMMS 🔄</Button>
+          <Button onClick={exportToCSV}>Download as CSV ⬇️</Button>
+          <Button variant="secondary">Sync to CMMS 🔄</Button>
         </div>
       </Card>
     </div>
