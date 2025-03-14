@@ -2,7 +2,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from backend.database import get_supabase_client
 from datetime import datetime, timedelta
-import jwt
+import jwt  # ✅ Ensure this is the correct import
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
+
 
 # Secret key for JWT (Change this in production)
 SECRET_KEY = "your_secret_key"
@@ -142,3 +144,20 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         "token_type": "bearer",
         "user": user_info["data"][0]
     }
+
+@router.post("/logout")
+async def logout(token: str = Depends(oauth2_scheme)):
+    supabase = get_supabase_client()
+
+    try:
+        # Revoke the session in Supabase
+        logout_response = supabase.auth.sign_out()
+
+        if logout_response.get("error"):
+            raise HTTPException(status_code=400, detail="Logout failed.")
+
+        return {"message": "User successfully logged out."}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error logging out.") from e
+
