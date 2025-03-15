@@ -28,12 +28,17 @@ function Login() {
         await signUp(email, password);
         setConfirmationMessage("✅ Check your email to confirm your account!");
       } else {
-        const user = await signIn(email, password);
-        if (!user || !user.id) {
-          throw new Error("Authentication failed - invalid user data");
+        try {
+          const user = await signIn(email, password);
+          if (!user) {
+            throw new Error("No user data returned");
+          }
+          const profileCompleted = await isProfileComplete(user.id);
+          navigate(profileCompleted ? "/company-overview" : "/complete-profile");
+        } catch (err) {
+          console.error("Sign in error:", err);
+          setError(err.message);
         }
-        const profileCompleted = await isProfileComplete(user.id);
-        navigate(profileCompleted ? "/company-overview" : "/complete-profile");
       }
     } catch (err) {
       setError(err.message);

@@ -34,7 +34,7 @@ export async function signIn(email, password) {
     password,
   });
   if (error) throw error;
-  return data;
+  return data.user;
 }
 
 export async function getCurrentUser() {
