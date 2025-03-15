@@ -77,3 +77,16 @@ export async function isProfileComplete(userId) {
   if (error && error.code !== 'PGRST116') throw error;
   return !!data;
 }
+
+export const fetchMetrics = async () => {
+  try {
+    const { data, error } = await supabase
+      .from("metrics") // Assuming you have a metrics table
+      .select("*");
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("❌ Error fetching metrics:", error.message);
+    throw error;
+  }
+};

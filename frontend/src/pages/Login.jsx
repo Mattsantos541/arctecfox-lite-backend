@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signIn, signUp, isProfileComplete } from "../api"; 
-
+import { signIn, signUp, isProfileComplete } from "../api";
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -47,7 +46,6 @@ function Login() {
         <h2 className="text-center text-3xl font-bold text-gray-900">
           {isSignUp ? "Create an Account" : "Sign In"}
         </h2>
-
         {confirmationMessage && <p className="text-green-500 text-center">{confirmationMessage}</p>}
         {error && <p className="text-red-500 text-center">{error}</p>}
 
