@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { completeUserProfile, getCurrentUser } from "../api"; // ✅ Ensure correct import path
+import { completeUserProfile, getCurrentUser, isProfileComplete } from "../api"; // ✅ Ensure correct import path
 
 function CompleteProfile() {
   const [formData, setFormData] = useState({

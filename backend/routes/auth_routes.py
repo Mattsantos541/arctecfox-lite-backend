@@ -31,12 +31,9 @@ async def complete_profile(
     industry: str, 
     company_size: str
 ):
-    if not user_id or not email:
-        raise HTTPException(status_code=400, detail="User ID and Email are required.")
-
     supabase = get_supabase_client()
 
-    # Fetch existing user to ensure they are in the auth.users
+    # ✅ Ensure user exists in `auth.users`
     user_query = supabase.auth.admin.list_users()
     user_data = next((user for user in user_query.get("data", {}).get("users", []) if user.get("email") == email), None)
 
@@ -45,47 +42,12 @@ async def complete_profile(
 
     user_id = user_data["id"]
 
-    # Check if company exists in `public.companies`
-    company_query = supabase.table("companies").select("id").eq("name", company_name).execute()
-    company_data = company_query.get("data")
-
-    if not company_data:
-        company_insert = supabase.table("companies").insert({
-            "name": company_name,
-            "industry": industry,
-            "company_size": company_size
-        }).execute()
-
-        if company_insert.get("error"):
-            raise HTTPException(status_code=500, detail="Error creating company.")
-
-        company_id = company_insert.get("data", [{}])[0].get("id")
-    else:
-        company_id = company_data[0]["id"]
-
-    # Insert/Update user profile in `public.users`
-    profile_update = supabase.table("users").upsert({
-        "id": user_id,
-        "email": email,
-        "full_name": full_name,
-        "role": role,
-        "company_id": company_id,  # Make sure these values exist
-        "industry": industry,
-        "company_size": company_size,
-        "company_name": company_name,
-    }).execute()
-
-    if profile_update.get("error"):
-        raise HTTPException(status_code=400, detail="Error updating profile.")
-
-    return {"message": "Profile updated successfully. Redirecting to dashboard."}
-
     # ✅ Check if company exists in `public.companies`
     company_query = supabase.table("companies").select("id").eq("name", company_name).execute()
     company_data = company_query.get("data")
 
     if not company_data:
-        # ✅ Create new company if it does not exist
+        # ✅ Insert new company if it does not exist
         company_insert = supabase.table("companies").insert({
             "name": company_name,
             "industry": industry,
@@ -99,7 +61,7 @@ async def complete_profile(
     else:
         company_id = company_data[0]["id"]
 
-    # ✅ Insert/Update user profile in `public.users`
+    # ✅ Insert or Update user profile in `public.users`
     profile_update = supabase.table("users").upsert({
         "id": user_id,
         "email": email,
@@ -109,6 +71,7 @@ async def complete_profile(
         "industry": industry,
         "company_size": company_size,
         "company_name": company_name,
+        "profile_completed": True  # ✅ Marks profile as completed
     }).execute()
 
     if profile_update.get("error"):
