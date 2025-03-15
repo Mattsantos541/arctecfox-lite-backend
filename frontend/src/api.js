@@ -103,12 +103,20 @@ export async function completeUserProfile(profileData) {
     .upsert({
       id: user.id,
       email: user.email,
-      ...profileData,
+      full_name: profileData.full_name,
+      role: profileData.role,
+      company_name: profileData.company_name,
+      industry: profileData.industry,
+      company_size: profileData.company_size,
       updated_at: new Date().toISOString(),
+      profile_completed: true
     })
-    .select()
+    .select('*')
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error('Profile completion error:', error);
+    throw new Error(error.message);
+  }
   return data;
 }
