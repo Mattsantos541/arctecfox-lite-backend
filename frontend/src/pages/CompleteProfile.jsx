@@ -16,26 +16,14 @@ function CompleteProfile() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        setError("Authentication token is missing. Please log in again.");
-        setLoading(false);
-        return;
-      }
-
       try {
-        const response = await axios.get("http://localhost:8000/api/user-session", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!response.data.user) {
-          setError("User session is missing. Please log in again.");
+        const currentUser = await getCurrentUser();
+        if (!currentUser) {
+          setError("Please log in again.");
           setLoading(false);
           return;
         }
-
-        setUser(response.data.user);
+        setUser(currentUser);
         setLoading(false);
       } catch (err) {
         console.error("❌ Get user error:", err);
@@ -49,22 +37,12 @@ function CompleteProfile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      setError("User session is missing. Please log in again.");
-      return;
-    }
+    setError(null);
 
     try {
-      await axios.post(
-        "http://localhost:8000/complete-profile",
-        { user_id: user.id, email: user.email, ...formData },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
+      await completeUserProfile(formData);
       alert("Profile updated successfully!");
-      window.location.href = "/dashboard";
+      navigate("/company-overview");
     } catch (err) {
       console.error("❌ Profile completion error:", err);
       setError("Failed to complete profile. Please try again.");

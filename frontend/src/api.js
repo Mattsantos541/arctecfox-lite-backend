@@ -1,19 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error("❌ Supabase credentials are missing. Check your .env file!");
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-const API_BASE_URL = "http://localhost:8000"; // ✅ Ensure correct API URL
-
-/*  🔹 AUTHENTICATION METHODS
- *  ====================== */
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
 // ✅ Export fetchAssets to be used by other modules
 export const fetchAssets = async () => {
@@ -29,74 +19,61 @@ export const fetchAssets = async () => {
   }
 };
 
-// ✅ Sign In User (FastAPI Authentication)
-export const signIn = async (email, password) => {
-  try {
-    // Format the data as `x-www-form-urlencoded`
-    const formData = new URLSearchParams();
-    formData.append("username", email);
-    formData.append("password", password);
+export async function signUp(email, password) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+  });
+  if (error) throw error;
+  return data;
+}
 
-    // Send request to FastAPI login route
-    const response = await fetch(`${API_BASE_URL}/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formData,
-    });
+export async function signIn(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (error) throw error;
+  return data;
+}
 
-    if (!response.ok) {
-      throw new Error(`❌ Login failed: ${response.statusText}`);
-    }
+export async function getCurrentUser() {
+  const { data: { session }, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  return session?.user || null;
+}
 
-    const data = await response.json();
-    localStorage.setItem("token", data.access_token); // ✅ Store JWT in localStorage
-    console.log("✅ Login successful:", data);
-    return data.user; // Return user data
+export async function signOut() {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+}
 
-  } catch (error) {
-    console.error("❌ Sign-in error:", error.message);
-    throw error;
-  }
-};
+export async function completeUserProfile(profileData) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('No authenticated user');
 
-// ✅ Get Current User (From FastAPI)
-export const getCurrentUser = async () => {
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) return null;
+  const { data, error } = await supabase
+    .from('users')
+    .upsert({
+      id: user.id,
+      email: user.email,
+      ...profileData,
+      updated_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
 
-    const response = await fetch(`${API_BASE_URL}/api/user-session`, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  if (error) throw error;
+  return data;
+}
 
-    if (!response.ok) {
-      console.error("❌ Session error:", response.statusText);
-      return null;
-    }
+export async function isProfileComplete(userId) {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+    .single();
 
-    const data = await response.json();
-    return data.user || null;
-
-  } catch (error) {
-    console.error("❌ Error getting current user:", error.message);
-    return null;
-  }
-};
-
-// ✅ Sign Out User
-export const signOut = async () => {
-  try {
-    // Clear local token
-    localStorage.removeItem("token");
-
-    // Logout from Supabase (optional)
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-
-    console.log("✅ User signed out.");
-  } catch (error) {
-    console.error("❌ Sign-out error:", error.message);
-    throw error;
-  }
-};
+  if (error && error.code !== 'PGRST116') throw error;
+  return !!data;
+}
