@@ -93,3 +93,22 @@ export const fetchMetrics = async () => {
     throw error;
   }
 };
+
+export async function completeUserProfile(profileData) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('No authenticated user');
+
+  const { data, error } = await supabase
+    .from('users')
+    .upsert({
+      id: user.id,
+      email: user.email,
+      ...profileData,
+      updated_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}

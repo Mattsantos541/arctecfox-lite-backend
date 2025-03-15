@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+import { completeUserProfile, getCurrentUser } from "../api"; // Ensure correct import
+import { useAuth } from "../hooks/useAuth"; // Ensure that this is correct
 
 function CompleteProfile() {
   const [formData, setFormData] = useState({
@@ -13,6 +16,7 @@ function CompleteProfile() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -39,8 +43,11 @@ function CompleteProfile() {
     e.preventDefault();
     setError(null);
 
+    // Include user ID if needed
+    const updatedData = { ...formData, user_id: user.id };
+
     try {
-      await completeUserProfile(formData);
+      await completeUserProfile(updatedData); // Ensure you pass the correct data
       alert("Profile updated successfully!");
       navigate("/company-overview");
     } catch (err) {
@@ -55,7 +62,6 @@ function CompleteProfile() {
     <div className="max-w-3xl mx-auto p-6 space-y-6 bg-gray-100 min-h-screen">
       <h2 className="text-3xl font-bold text-gray-900">Complete Your Profile</h2>
       {error && <p className="text-red-600">{error}</p>}
-
       <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow-lg">
         <input type="text" name="full_name" placeholder="Full Name" className="w-full border p-2 rounded" onChange={(e) => setFormData({ ...formData, full_name: e.target.value })} required />
         <input type="text" name="role" placeholder="Role" className="w-full border p-2 rounded" onChange={(e) => setFormData({ ...formData, role: e.target.value })} required />
