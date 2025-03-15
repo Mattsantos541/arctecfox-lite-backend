@@ -68,6 +68,9 @@ export async function completeUserProfile(profileData) {
 }
 
 export async function isProfileComplete(userId) {
+  if (!userId) {
+    throw new Error("User ID is required to check profile status");
+  }
   const { data, error } = await supabase
     .from('users')
     .select('*')

@@ -29,6 +29,9 @@ function Login() {
         setConfirmationMessage("✅ Check your email to confirm your account!");
       } else {
         const user = await signIn(email, password);
+        if (!user || !user.id) {
+          throw new Error("Authentication failed - invalid user data");
+        }
         const profileCompleted = await isProfileComplete(user.id);
         navigate(profileCompleted ? "/company-overview" : "/complete-profile");
       }
