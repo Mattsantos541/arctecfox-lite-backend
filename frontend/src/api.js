@@ -1,5 +1,4 @@
-
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 // Initialize Supabase client
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -11,7 +10,12 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// ✅ Fetch Assets
+const API_BASE_URL = "http://localhost:8000"; // ✅ Ensure correct API URL
+
+/*  🔹 AUTHENTICATION METHODS
+ *  ====================== */
+
+// ✅ Export fetchAssets to be used by other modules
 export const fetchAssets = async () => {
   try {
     const { data, error } = await supabase
@@ -25,194 +29,74 @@ export const fetchAssets = async () => {
   }
 };
 
-// ✅ Fetch Metrics
-export const fetchMetrics = async () => {
-  try {
-    const { data, error } = await supabase
-      .from("metrics")
-      .select("*");
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error("❌ Error fetching metrics:", error);
-    throw error;
-  }
-};
-
-/*  🔹 AUTHENTICATION METHODS
- *  ====================== */
-
-// ✅ Sign Up User (Triggers Email Confirmation)
-export const signUp = async (email, password) => {
-  try {
-    // Get the current URL to build the redirect URL
-    const baseUrl = window.location.origin;
-    const redirectTo = `${baseUrl}/complete-profile`;
-    
-    const { data, error } = await supabase.auth.signUp({ 
-      email, 
-      password,
-      options: {
-        emailRedirectTo: redirectTo
-      }
-    });
-
-    if (error) throw error;
-    console.log("✅ User signup successful:", data);
-
-    return data.user; // Return the signed-up user
-  } catch (error) {
-    console.error("❌ Signup error:", error.message);
-    throw error;
-  }
-};
-
-// ✅ Sign In User (Only works after email confirmation)
+// ✅ Sign In User (FastAPI Authentication)
 export const signIn = async (email, password) => {
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    // Format the data as `x-www-form-urlencoded`
+    const formData = new URLSearchParams();
+    formData.append("username", email);
+    formData.append("password", password);
 
-    if (error) throw error;
-    return data.user;
+    // Send request to FastAPI login route
+    const response = await fetch(`${API_BASE_URL}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`❌ Login failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    localStorage.setItem("token", data.access_token); // ✅ Store JWT in localStorage
+    console.log("✅ Login successful:", data);
+    return data.user; // Return user data
+
   } catch (error) {
     console.error("❌ Sign-in error:", error.message);
     throw error;
   }
 };
 
-// ✅ Sign Out User
-export const signOut = async () => {
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-  } catch (error) {
-    console.error("❌ Sign-out error:", error.message);
-    throw error;
-  }
-};
-
-// ✅ Get Current User
+// ✅ Get Current User (From FastAPI)
 export const getCurrentUser = async () => {
   try {
-    const { data, error } = await supabase.auth.getUser();
+    const token = localStorage.getItem("token");
+    if (!token) return null;
 
-    if (error) {
-      console.error("❌ Get user error:", error.message);
+    const response = await fetch(`${API_BASE_URL}/api/user-session`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      console.error("❌ Session error:", response.statusText);
       return null;
     }
 
+    const data = await response.json();
     return data.user || null;
+
   } catch (error) {
     console.error("❌ Error getting current user:", error.message);
     return null;
   }
 };
 
-/*  🔹 PROFILE COMPLETION METHODS
- *  ====================== */
-
-// ✅ Check if User Profile is Complete in `public.users`
-export const isProfileComplete = async (userId) => {
-  const { data, error } = await supabase
-    .from("users")
-    .select("id")
-    .eq("id", userId)
-    .single();
-
-  return !!data && !error; // Returns true if user profile exists
-};
-
-// ✅ Complete Profile (Insert into `public.users`)
-export const completeProfile = async (userId, profileData) => {
+// ✅ Sign Out User
+export const signOut = async () => {
   try {
-    // Insert User Profile into `public.users`
-    const { error: profileError } = await supabase
-      .from("users")
-      .upsert([
-        {
-          id: userId,
-          company_name: profileData.company_name,
-          phone_number: profileData.phone_number,
-          address: profileData.address,
-          industry: profileData.industry,
-        },
-      ]);
+    // Clear local token
+    localStorage.removeItem("token");
 
-    if (profileError) {
-      console.error("❌ Error inserting profile:", profileError.message);
-      throw profileError;
-    }
+    // Logout from Supabase (optional)
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
 
-    console.log("✅ Profile completed successfully");
-    return true;
+    console.log("✅ User signed out.");
   } catch (error) {
-    console.error("❌ Error completing profile:", error.message);
+    console.error("❌ Sign-out error:", error.message);
     throw error;
   }
-};
-
-// ✅ Get User Profile (From `public.users`)
-export const getUserProfile = async () => {
-  try {
-    const user = await getCurrentUser();
-    if (!user) return null;
-
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-
-    if (error) {
-      console.error("❌ Get profile error:", error.message);
-      return null;
-    }
-
-    return data;
-  } catch (error) {
-    console.error("❌ Error fetching profile:", error.message);
-    return null;
-  }
-};
-
-/*  🔹 DASHBOARD METHODS
- *  ====================== */
-
-// ✅ Get Dashboard Metrics
-export const getDashboardMetrics = async () => {
-  try {
-    // Mock data (Replace with real API endpoint)
-    return {
-      totalAssets: 42,
-      activeAssets: 36,
-      activePMPlans: 12,
-      nextPMTask: "Replace filters on AC units",
-      locations: [
-        { name: "Building A", assetCount: 15 },
-        { name: "Building B", assetCount: 12 },
-        { name: "Warehouse", assetCount: 8 },
-        { name: "Office", assetCount: 7 },
-      ],
-    };
-  } catch (error) {
-    console.error("❌ Error fetching metrics:", error);
-    return {
-      totalAssets: 0,
-      activeAssets: 0,
-      activePMPlans: 0,
-      nextPMTask: "N/A",
-      locations: [],
-    };
-  }
-};
-
-// ✅ Auth state change listener
-export const onAuthStateChange = (callback) => {
-  return supabase.auth.onAuthStateChange((event, session) => {
-    if (event === "SIGNED_IN") {
-      callback(session?.user || null);
-    } else if (event === "SIGNED_OUT") {
-      callback(null);
-    }
-  });
 };

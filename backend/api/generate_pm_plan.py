@@ -1,5 +1,6 @@
 import os
 import openai
+import json
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -31,34 +32,51 @@ async def generate_pm_plan(asset: AssetData):
     - **Operating Environment**: {asset.environment}
 
     **Instructions:**
-    - Provide a **structured table format** listing maintenance tasks.
+    - Provide a **structured JSON output** listing maintenance tasks.
     - Each row should have:
         1. **Task Name**
         2. **Maintenance Interval (Daily, Weekly, Monthly, Quarterly, Annual)**
         3. **Step-by-step instructions**
         4. **Reason for the task**
-    - Output in a structured JSON format.
+    - Output in valid **JSON format**, ready for parsing.
+
+    **Example JSON output:**
+    {{
+        "pm_plan": [
+            {{
+                "interval": "Monthly",
+                "task": "Inspect the cutting system",
+                "steps": "Thoroughly inspect the cutting system, focusing on blade wear, and sharpen or replace blades as necessary.",
+                "reason": "Dull or damaged blades reduce cutting accuracy and increase strain on the machine."
+            }},
+            {{
+                "interval": "Quarterly",
+                "task": "Calibrate the control panel",
+                "steps": "Ensure all controls respond accurately and recalibrate sensors if necessary.",
+                "reason": "Prevents inaccuracies and maintains optimal operation."
+            }}
+        ]
+    }}
     """
 
     try:
         # Call OpenAI API
         response = openai.ChatCompletion.create(
             model="gpt-4",
-            messages=[{"role": "system", "content": hidden_prompt}]
+            messages=[{"role": "system", "content": hidden_prompt}],
+            temperature=0.7
         )
 
         # Extract AI-generated text
         pm_plan_text = response["choices"][0]["message"]["content"]
 
-        # Simulated structured PM Plan (To be replaced with dynamic parsing from AI)
-        tasks = [
-            {"interval": "Monthly", "task": "Inspect the cutting system", "steps": "Thoroughly inspect the cutting system, focusing on blade wear, and sharpen or replace blades as necessary.", "reason": "Dull or damaged blades reduce cutting accuracy and increase strain on the machine."},
-            {"interval": "Monthly", "task": "Verify the control panel and sensors", "steps": "Test the control panel's responsiveness and calibrate any sensors if necessary.", "reason": "Ensures the machine operates within its specifications and improves cut quality."},
-            {"interval": "Quarterly", "task": "Perform full machine calibration", "steps": "Recalibrate all systems to ensure that measurements and movements are accurate.", "reason": "Accurate calibration improves cutting precision and reduces errors."},
-            {"interval": "Quarterly", "task": "Inspect hydraulic system", "steps": "Check the hydraulic fluid levels and inspect hoses, cylinders, and pumps for any signs of leaks or damage.", "reason": "Proper hydraulic function is critical for the machine's pressure and cutting capabilities."},
-        ]
+        # Convert AI response to structured JSON
+        try:
+            pm_plan = json.loads(pm_plan_text)  # Ensure AI output is valid JSON
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=500, detail="AI response could not be parsed as JSON.")
 
-        return {"pm_plan": tasks, "ai_explanation": pm_plan_text}
+        return pm_plan
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
