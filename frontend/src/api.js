@@ -34,9 +34,21 @@ export async function signIn(email, password) {
 }
 
 export async function signOut() {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+
+    // ✅ Clear session from local storage
+    localStorage.removeItem("supabase.auth.token");
+    sessionStorage.clear();
+
+    console.log("✅ User logged out successfully.");
+  } catch (error) {
+    console.error("❌ Sign-out error:", error.message);
+    throw error;
+  }
 }
+
 
 // ✅ Get Current User
 export async function getCurrentUser() {

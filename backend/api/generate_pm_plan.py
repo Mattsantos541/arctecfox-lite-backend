@@ -3,11 +3,25 @@ import openai
 import json
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import os
 from dotenv import load_dotenv
 
-# Load API Key from .env file
-load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# Manually load .env variables
+env_loaded = load_dotenv()
+
+# Debugging: Print if .env was loaded
+if env_loaded:
+    print("✅ .env file loaded successfully")
+else:
+    print("❌ .env file NOT loaded")
+
+# Check if API Key is loaded
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise ValueError("🚨 ERROR: OPENAI_API_KEY is missing! Check your .env file.")
+
+openai.api_key = api_key
+print("✅ OpenAI API Key Loaded Successfully")
 
 app = FastAPI()
 
@@ -62,7 +76,7 @@ async def generate_pm_plan(asset: AssetData):
     try:
         # Call OpenAI API
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[{"role": "system", "content": hidden_prompt}],
             temperature=0.7
         )
