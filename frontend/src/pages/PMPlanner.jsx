@@ -5,6 +5,7 @@ import { Card } from "../components/ui/card";
 import { Table } from "../components/ui/table";
 import axios from "axios";
 import { saveAs } from "file-saver";
+import * as XLSX from "xlsx"; // ✅ Import XLSX for Excel support
 
 export default function PMPlanner() {
   const [assetData, setAssetData] = useState({
@@ -35,7 +36,7 @@ export default function PMPlanner() {
     setLoading(false);
   };
 
-  // Convert PM Plan to CSV Format
+  // ✅ Convert PM Plan to CSV Format
   const exportToCSV = () => {
     if (pmPlan.length === 0) {
       alert("No PM plan available to export.");
@@ -51,9 +52,31 @@ export default function PMPlanner() {
     saveAs(blob, "pm_plan.csv");
   };
 
+  // ✅ Convert PM Plan to Excel Format
+  const exportToExcel = () => {
+    if (pmPlan.length === 0) {
+      alert("No PM plan available to export.");
+      return;
+    }
+
+    // Convert data into an array of arrays
+    const data = [["Interval", "Task", "Steps", "Reason"]];
+    pmPlan.forEach((task) => {
+      data.push([task.interval, task.task, task.steps, task.reason]);
+    });
+
+    // Create a worksheet and workbook
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "PM Plan");
+
+    // Save file as Excel
+    XLSX.writeFile(wb, "pm_plan.xlsx");
+  };
+
   return (
     <div className="container mx-auto p-6">
-      {/* Asset Data Input */}
+      {/* ✅ Asset Data Input */}
       <Card title="Asset Data Input">
         <div className="grid grid-cols-2 gap-4">
           <Input name="name" placeholder="Asset Name" onChange={handleInputChange} />
@@ -69,7 +92,7 @@ export default function PMPlanner() {
         </div>
       </Card>
 
-      {/* AI-Powered PM Plan Table */}
+      {/* ✅ AI-Powered PM Plan Table */}
       <Card title="AI-Powered PM Plan" className="mt-6">
         {pmPlan.length > 0 ? (
           <Table
@@ -87,10 +110,11 @@ export default function PMPlanner() {
         <Button className="mt-4" variant="secondary">Regenerate Plan 🔄</Button>
       </Card>
 
-      {/* Export & Integration Section */}
+      {/* ✅ Export & Integration Section */}
       <Card title="Export & Integration" className="mt-6">
         <div className="flex gap-4">
           <Button onClick={exportToCSV}>Download as CSV ⬇️</Button>
+          <Button onClick={exportToExcel}>Download as Excel 📊</Button>
           <Button variant="secondary">Sync to CMMS 🔄</Button>
         </div>
       </Card>
