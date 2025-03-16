@@ -1,29 +1,23 @@
 import os
 import openai
 import json
-from fastapi import FastAPI, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-import os
 from dotenv import load_dotenv
 
-# Manually load .env variables
-env_loaded = load_dotenv()
-
-# Debugging: Print if .env was loaded
-if env_loaded:
-    print("✅ .env file loaded successfully")
-else:
-    print("❌ .env file NOT loaded")
-
-# Check if API Key is loaded
+# Load environment variables
+load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
+
+# Validate API key
 if not api_key:
-    raise ValueError("🚨 ERROR: OPENAI_API_KEY is missing! Check your .env file.")
+    raise RuntimeError("🚨 ERROR: OPENAI_API_KEY is missing! Please check your .env file.")
 
+# Set OpenAI API key
 openai.api_key = api_key
-print("✅ OpenAI API Key Loaded Successfully")
 
-app = FastAPI()
+# Define FastAPI Router (instead of creating another FastAPI app)
+router = APIRouter()
 
 class AssetData(BaseModel):
     name: str
@@ -34,46 +28,40 @@ class AssetData(BaseModel):
     cycles: int
     environment: str
 
-@app.post("/api/generate_pm_plan")
+@router.post("/api/generate_pm_plan")
 async def generate_pm_plan(asset: AssetData):
-    # OpenAI Prompt for Structured Preventive Maintenance Plan
-    hidden_prompt = f"""
-    Create a detailed preventive maintenance plan for the {asset.name} ({asset.model}).
-
-    - **Category**: {asset.category}
-    - **Serial Number**: {asset.serial}
-    - **Usage**: {asset.hours} hours/year, {asset.cycles} cycles/year
-    - **Operating Environment**: {asset.environment}
-
-    **Instructions:**
-    - Provide a **structured JSON output** listing maintenance tasks.
-    - Each row should have:
-        1. **Task Name**
-        2. **Maintenance Interval (Daily, Weekly, Monthly, Quarterly, Annual)**
-        3. **Step-by-step instructions**
-        4. **Reason for the task**
-    - Output in valid **JSON format**, ready for parsing.
-
-    **Example JSON output:**
-    {{
-        "pm_plan": [
-            {{
-                "interval": "Monthly",
-                "task": "Inspect the cutting system",
-                "steps": "Thoroughly inspect the cutting system, focusing on blade wear, and sharpen or replace blades as necessary.",
-                "reason": "Dull or damaged blades reduce cutting accuracy and increase strain on the machine."
-            }},
-            {{
-                "interval": "Quarterly",
-                "task": "Calibrate the control panel",
-                "steps": "Ensure all controls respond accurately and recalibrate sensors if necessary.",
-                "reason": "Prevents inaccuracies and maintains optimal operation."
-            }}
-        ]
-    }}
     """
-
+    Generates a Preventive Maintenance (PM) plan using OpenAI based on asset details.
+    """
     try:
+        # Format asset details safely
+        asset_data = {
+            "name": asset.name,
+            "model": asset.model,
+            "serial": asset.serial,
+            "category": asset.category,
+            "hours": asset.hours,
+            "cycles": asset.cycles,
+            "environment": asset.environment,
+        }
+
+        # Use json.dumps() to prevent formatting issues
+        hidden_prompt = f"""
+        Create a detailed preventive maintenance plan for the following asset:
+
+        {json.dumps(asset_data, indent=2)}
+
+        **Instructions:**
+        - Provide structured **JSON output** with a list of maintenance tasks.
+        - Each task must include:
+          1. **Task Name**
+          2. **Maintenance Interval** (Daily, Weekly, Monthly, Quarterly, Annual)
+          3. **Step-by-step Instructions**
+          4. **Reason for the Task**
+
+        Output the plan in **valid JSON format**, ready for direct API consumption.
+        """
+
         # Call OpenAI API
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -82,15 +70,18 @@ async def generate_pm_plan(asset: AssetData):
         )
 
         # Extract AI-generated text
-        pm_plan_text = response["choices"][0]["message"]["content"]
+        pm_plan_text = response["choices"][0]["message"]["content"].strip()
 
-        # Convert AI response to structured JSON
+        # Validate JSON format
         try:
-            pm_plan = json.loads(pm_plan_text)  # Ensure AI output is valid JSON
+            pm_plan = json.loads(pm_plan_text)
         except json.JSONDecodeError:
             raise HTTPException(status_code=500, detail="AI response could not be parsed as JSON.")
 
-        return pm_plan
+        return {"success": True, "data": pm_plan}
+
+    except openai.error.OpenAIError as oe:
+        raise HTTPException(status_code=500, detail=f"OpenAI API Error: {str(oe)}")
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
