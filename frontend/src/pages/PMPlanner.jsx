@@ -26,15 +26,32 @@ export default function PMPlanner() {
   };
 
   const generatePMPlan = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.post("http://localhost:9000/api/generate_pm_plan", assetData);
-      setPmPlan(response.data.pm_plan);
-    } catch (error) {
-      console.error("Error generating PM plan:", error);
-    }
-    setLoading(false);
+      setLoading(true);
+      try {
+          const response = await axios.post(
+              "http://127.0.0.:9000/api/generate_pm_plan", // Use 127.0.0.1 instead of localhost
+              {
+                  name: assetData.name,
+                  model: assetData.model,
+                  serial: assetData.serial,
+                  category: assetData.category,
+                  hours: parseInt(assetData.hours) || 0,  // Ensure number format
+                  cycles: parseInt(assetData.cycles) || 0, // Ensure number format
+                  environment: assetData.environment
+              },
+              {
+                  headers: {
+                      "Content-Type": "application/json"
+                  }
+              }
+          );
+          setPmPlan(response.data.pm_plan);
+      } catch (error) {
+          console.error("❌ Error generating PM plan:", error);
+      }
+      setLoading(false);
   };
+
 
   // ✅ Convert PM Plan to CSV Format
   const exportToCSV = () => {
