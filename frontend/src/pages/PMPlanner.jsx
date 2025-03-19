@@ -26,32 +26,18 @@ export default function PMPlanner() {
   };
 
   const generatePMPlan = async () => {
-      setLoading(true);
-      try {
-          const response = await axios.post(
-              "http://127.0.0.:9000/api/generate_pm_plan", // Use 127.0.0.1 instead of localhost
-              {
-                  name: assetData.name,
-                  model: assetData.model,
-                  serial: assetData.serial,
-                  category: assetData.category,
-                  hours: parseInt(assetData.hours) || 0,  // Ensure number format
-                  cycles: parseInt(assetData.cycles) || 0, // Ensure number format
-                  environment: assetData.environment
-              },
-              {
-                  headers: {
-                      "Content-Type": "application/json"
-                  }
-              }
-          );
-          setPmPlan(response.data.pm_plan);
-      } catch (error) {
-          console.error("❌ Error generating PM plan:", error);
-      }
-      setLoading(false);
-  };
+    setLoading(true); // ✅ Show loading message
+    setPmPlan([]); // ✅ Clear previous results
 
+    try {
+      const response = await axios.post("http://localhost:9000/api/generate_pm_plan", assetData);
+      setPmPlan(response.data.pm_plan);
+    } catch (error) {
+      console.error("Error generating PM plan:", error);
+    }
+
+    setLoading(false); // ✅ Hide loading message
+  };
 
   // ✅ Convert PM Plan to CSV Format
   const exportToCSV = () => {
@@ -76,18 +62,15 @@ export default function PMPlanner() {
       return;
     }
 
-    // Convert data into an array of arrays
     const data = [["Interval", "Task", "Steps", "Reason"]];
     pmPlan.forEach((task) => {
       data.push([task.interval, task.task, task.steps, task.reason]);
     });
 
-    // Create a worksheet and workbook
     const ws = XLSX.utils.aoa_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "PM Plan");
 
-    // Save file as Excel
     XLSX.writeFile(wb, "pm_plan.xlsx");
   };
 
@@ -109,9 +92,14 @@ export default function PMPlanner() {
         </div>
       </Card>
 
-      {/* ✅ AI-Powered PM Plan Table */}
+      {/* ✅ AI-Powered PM Plan Table with Loading Indicator */}
       <Card title="AI-Powered PM Plan" className="mt-6">
-        {pmPlan.length > 0 ? (
+        {loading ? (
+          <div className="text-center p-4">
+            <span className="loader"></span> {/* ✅ Animated Spinner */}
+            <p className="mt-2 text-gray-600">Generating PM Plan... Please wait.</p>
+          </div>
+        ) : pmPlan.length > 0 ? (
           <Table
             headers={["Interval", "Task", "Steps", "Reason"]}
             data={pmPlan.map((task) => [
