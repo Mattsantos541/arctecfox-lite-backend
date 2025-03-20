@@ -7,7 +7,8 @@ import axios from "axios";
 import { saveAs } from "file-saver";
 import * as XLSX from "xlsx"; // ✅ Import XLSX for Excel support
 
-const API_BASE_URL = "http://0.0.0.0:8000/api"; // ✅ Backend API endpoint
+// ✅ Use Environment Variable for Backend URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api"; 
 
 export default function PMPlanner() {
   const [assetData, setAssetData] = useState({
@@ -41,11 +42,12 @@ export default function PMPlanner() {
         setPmPlan(response.data.data.maintenance_plan);
         console.log("✅ Successfully received PM plan:", response.data.data.maintenance_plan);
       } else {
+        console.error("❌ Unexpected API response format:", response.data);
         throw new Error("Invalid API response format");
       }
     } catch (error) {
       console.error("❌ Error generating PM plan:", error);
-      setError("Failed to generate PM plan. Please check your connection.");
+      setError("Failed to generate PM plan. Please check your connection and backend logs.");
     }
 
     setLoading(false);
@@ -60,7 +62,7 @@ export default function PMPlanner() {
 
     let csvContent = "Task,Interval,Instructions,Reason\n";
     pmPlan.forEach((task) => {
-      csvContent += `"${task.task_name}","${task.maintenance_interval}","${task.instructions?.join("; ")}","${task.reason}"\n`;
+      csvContent += `"${task.task_name}","${task.maintenance_interval}","${task.instructions?.join("; ") || "N/A"}","${task.reason}"\n`;
     });
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -79,7 +81,7 @@ export default function PMPlanner() {
       data.push([
         task.task_name,
         task.maintenance_interval,
-        task.instructions?.join("; "),
+        task.instructions?.join("; ") || "N/A",
         task.reason,
       ]);
     });
@@ -93,6 +95,7 @@ export default function PMPlanner() {
 
   return (
     <div className="container mx-auto p-6">
+      {/* ✅ Asset Data Input */}
       <Card title="Asset Data Input">
         <div className="grid grid-cols-2 gap-4">
           <Input name="name" placeholder="Asset Name" onChange={handleInputChange} />
@@ -108,8 +111,10 @@ export default function PMPlanner() {
         </div>
       </Card>
 
+      {/* ✅ Show Error Message if API Call Fails */}
       {error && <p className="text-red-500 mt-4">{error}</p>}
 
+      {/* ✅ AI-Powered PM Plan Table with Loading Indicator */}
       <Card title="AI-Powered PM Plan" className="mt-6">
         {loading ? (
           <div className="text-center p-4">
@@ -122,7 +127,7 @@ export default function PMPlanner() {
             data={pmPlan.map((task) => [
               task.task_name,
               task.maintenance_interval,
-              task.instructions?.join("; "),
+              task.instructions?.join("; ") || "N/A",
               task.reason,
             ])}
           />

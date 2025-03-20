@@ -1,63 +1,125 @@
+import os
+import json
 import logging
 from fastapi import APIRouter, HTTPException
-import openai
-import json
+from pydantic import BaseModel
 from dotenv import load_dotenv
-import os
+import openai
 
 # ✅ Load environment variables
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
+# ✅ Configure logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+# ✅ Validate API key
 if not api_key:
-    raise RuntimeError("🚨 ERROR: OPENAI_API_KEY is missing! Check .env file.")
+    raise RuntimeError("🚨 ERROR: OPENAI_API_KEY is missing! Please check your .env file.")
 
-openai.api_key = api_key
+# ✅ Set OpenAI API client
+client = openai.OpenAI(api_key=api_key)
 
-# ✅ Set up FastAPI router
+# ✅ Define FastAPI Router
 router = APIRouter()
 
-# ✅ Configure logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+# ✅ Define Asset Data Model
+class AssetData(BaseModel):
+    name: str
+    model: str
+    serial: str
+    category: str
+    hours: int
+    cycles: int
+    environment: str
 
-@router.post("/generate_pm_plan")
-async def generate_pm_plan(asset: dict):
+@router.post("/api/generate_pm_plan")
+async def generate_pm_plan(asset: AssetData):
+    """
+    Generates a Preventive Maintenance (PM) plan using OpenAI based on asset details.
+    """
     try:
-        logger.info("📩 Received API request with asset data: %s", asset)
+        # ✅ Log received asset data
+        logger.info(f"📩 Received API request with asset data: {asset.dict()}")
 
-        if not openai.api_key:
-            logger.error("🚨 OpenAI API Key is missing!")
-            raise HTTPException(status_code=500, detail="OpenAI API key is missing!")
+        # ✅ Format asset details safely
+        asset_data = {
+            "name": asset.name,
+            "model": asset.model,
+            "serial": asset.serial,
+            "category": asset.category,
+            "hours": asset.hours,
+            "cycles": asset.cycles,
+            "environment": asset.environment,
+        }
 
-        # ✅ Call OpenAI API
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "system", "content": f"Create a PM plan for {asset['name']}"}]
+        # ✅ Construct prompt for OpenAI
+        prompt = f"""
+        Create a detailed preventive maintenance plan for the following asset:
+
+        {json.dumps(asset_data, indent=2)}
+
+        **Instructions:**
+        - Provide structured **JSON output** with a list of maintenance tasks.
+        - Each task must include:
+          1. **Task Name**
+          2. **Maintenance Interval** (Daily, Weekly, Monthly, Quarterly, Annual)
+          3. **Step-by-step Instructions**
+          4. **Reason for the Task**
+          5. **Safety Precautions**
+
+        **Output Format (JSON Example):**
+        {{
+            "maintenance_plan": [
+                {{
+                    "task_name": "Visual Inspection",
+                    "maintenance_interval": "Daily",
+                    "instructions": [
+                        "Inspect for any leaks or unusual noises",
+                        "Check for any visible damage or wear",
+                        "Ensure proper alignment and mounting"
+                    ],
+                    "reason": "To identify potential issues early and prevent breakdowns",
+                    "safety_precautions": "Ensure the pump is turned off before inspecting"
+                }},
+                {{
+                    "task_name": "Lubrication",
+                    "maintenance_interval": "Monthly",
+                    "instructions": [
+                        "Apply lubricant to all moving parts as per manufacturer’s recommendations"
+                    ],
+                    "reason": "To reduce friction and wear on moving parts",
+                    "safety_precautions": "Wear appropriate PPE when handling lubricants"
+                }}
+            ]
+        }}
+        """
+
+        # ✅ Call OpenAI API using new syntax
+        response = client.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[{"role": "system", "content": prompt}],
+            temperature=0.7
         )
 
-        logger.info("✅ OpenAI API responded successfully.")
+        # ✅ Extract AI-generated text
+        pm_plan_text = response.choices[0].message.content.strip()
 
-        pm_plan_text = response["choices"][0]["message"]["content"].strip()
-        logger.debug("📄 OpenAI Response: %s", pm_plan_text)
-
+        # ✅ Validate JSON format
         try:
-            pm_plan = json.loads(pm_plan_text)
+            pm_plan = json.loads(pm_plan_text)  # Ensure AI response is valid JSON
         except json.JSONDecodeError:
-            logger.error("🚨 OpenAI returned invalid JSON!")
-            raise HTTPException(status_code=500, detail="Invalid JSON response from OpenAI.")
+            logger.error("❌ AI response could not be parsed as JSON.")
+            raise HTTPException(status_code=500, detail="AI response could not be parsed as JSON.")
 
-        # ✅ Ensure response structure is correct
-        if not isinstance(pm_plan, dict) or "maintenance_plan" not in pm_plan:
-            logger.error("🚨 API returned incorrect format!")
-            raise HTTPException(status_code=500, detail="Invalid API response structure.")
-
+        logger.info("✅ Successfully generated PM Plan")
         return {"success": True, "data": pm_plan}
 
-    except openai.error.OpenAIError as oe:
-        logger.error("🚨 OpenAI API Error: %s", str(oe))
+    except openai.OpenAIError as oe:
+        logger.error(f"❌ OpenAI API Error: {oe}")
         raise HTTPException(status_code=500, detail=f"OpenAI API Error: {str(oe)}")
 
     except Exception as e:
-        logger.error("❌ Internal Server Error: %s", str(e))
+        logger.error(f"❌ Internal Server Error: {e}")
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")

@@ -1,9 +1,14 @@
 import logging
+import sys
+import os
+
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from backend.routes import auth_routes  # ✅ Ensure correct import
-from backend.api.generate_pm_plan import router as pm_router  # ✅ Corrected import
-from backend.database import get_assets  # ✅ Ensure correct import
+from backend.api.generate_pm_plan import router as pm_router
+from backend.routes.auth_routes import router as auth_router
+from backend.database import get_assets
 
 # ✅ Configure Logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -14,10 +19,10 @@ app = FastAPI()
 # ✅ Log API Startup Event
 logger.info("🚀 FastAPI Server is Starting...")
 
-# ✅ Configure CORS (Allow Frontend Requests)
+# ✅ Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # ✅ Allow frontend (Update in production)
+    allow_origins=["*"],  # 🔥 Change this to specific frontend URL in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -25,9 +30,8 @@ app.add_middleware(
 logger.info("✅ CORS Middleware Configured")
 
 # ✅ Register API Routes
-app.include_router(auth_routes.router, prefix="/auth")  # ✅ Authentication
-app.include_router(pm_router, prefix="/api")  # ✅ PM Planner API (ensure "/api" prefix)
-
+app.include_router(auth_router)
+app.include_router(pm_router)  # Register PM Planner API
 logger.info("✅ API Routes Registered")
 
 # ✅ Middleware to Log Incoming Requests
@@ -38,7 +42,7 @@ async def log_requests(request: Request, call_next):
     logger.info(f"📤 Response: {response.status_code}")
     return response
 
-# ✅ Health Check Route
+# ✅ Home Route - Health Check
 @app.get("/")
 async def home():
     logger.info("🏠 Home Route Accessed")
