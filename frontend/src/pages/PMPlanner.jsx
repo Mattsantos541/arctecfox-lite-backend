@@ -30,7 +30,7 @@ export default function PMPlanner() {
     setPmPlan([]); // ✅ Clear previous results
 
     try {
-      const response = await axios.post("http://localhost:9000/api/generate_pm_plan", assetData);
+      const response = await axios.post("http://0.0.0.0:9000/api/generate_pm_plan", assetData);
       setPmPlan(response.data.pm_plan);
     } catch (error) {
       console.error("Error generating PM plan:", error);
