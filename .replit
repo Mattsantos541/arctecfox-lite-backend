@@ -20,7 +20,6 @@ externalPort = 80
 [[ports]]
 localPort = 8000
 externalPort = 8000
-exposeLocalhost = true
 
 [[ports]]
 localPort = 9000
@@ -49,7 +48,7 @@ mode = "parallel"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd backend && uvicorn main:app --host 0.0.0.0 --port 9000 --reload"
+args = "cd backend && PYTHONPATH=backend uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"

@@ -1,87 +1,63 @@
-import os
+import logging
+from fastapi import APIRouter, HTTPException
 import openai
 import json
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
 from dotenv import load_dotenv
+import os
 
-# Load environment variables
+# ✅ Load environment variables
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
-# Validate API key
 if not api_key:
-    raise RuntimeError("🚨 ERROR: OPENAI_API_KEY is missing! Please check your .env file.")
+    raise RuntimeError("🚨 ERROR: OPENAI_API_KEY is missing! Check .env file.")
 
-# Set OpenAI API key
 openai.api_key = api_key
 
-# Define FastAPI Router (instead of creating another FastAPI app)
+# ✅ Set up FastAPI router
 router = APIRouter()
 
-class AssetData(BaseModel):
-    name: str
-    model: str
-    serial: str
-    category: str
-    hours: int
-    cycles: int
-    environment: str
+# ✅ Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
-@router.post("/api/generate_pm_plan")
-async def generate_pm_plan(asset: AssetData):
-    """
-    Generates a Preventive Maintenance (PM) plan using OpenAI based on asset details.
-    """
+@router.post("/generate_pm_plan")
+async def generate_pm_plan(asset: dict):
     try:
-        # Format asset details safely
-        asset_data = {
-            "name": asset.name,
-            "model": asset.model,
-            "serial": asset.serial,
-            "category": asset.category,
-            "hours": asset.hours,
-            "cycles": asset.cycles,
-            "environment": asset.environment,
-        }
+        logger.info("📩 Received API request with asset data: %s", asset)
 
-        # Use json.dumps() to prevent formatting issues
-        hidden_prompt = f"""
-        Create a detailed preventive maintenance plan for the following asset:
+        if not openai.api_key:
+            logger.error("🚨 OpenAI API Key is missing!")
+            raise HTTPException(status_code=500, detail="OpenAI API key is missing!")
 
-        {json.dumps(asset_data, indent=2)}
-
-        **Instructions:**
-        - Provide structured **JSON output** with a list of maintenance tasks.
-        - Each task must include:
-          1. **Task Name**
-          2. **Maintenance Interval** (Daily, Weekly, Monthly, Quarterly, Annual)
-          3. **Step-by-step Instructions**
-          4. **Reason for the Task**
-
-        Output the plan in **valid JSON format**, ready for direct API consumption.
-        """
-
-        # Call OpenAI API
+        # ✅ Call OpenAI API
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "system", "content": hidden_prompt}],
-            temperature=0.7
+            messages=[{"role": "system", "content": f"Create a PM plan for {asset['name']}"}]
         )
 
-        # Extract AI-generated text
-        pm_plan_text = response["choices"][0]["message"]["content"].strip()
+        logger.info("✅ OpenAI API responded successfully.")
 
-        # Validate JSON format
+        pm_plan_text = response["choices"][0]["message"]["content"].strip()
+        logger.debug("📄 OpenAI Response: %s", pm_plan_text)
+
         try:
             pm_plan = json.loads(pm_plan_text)
         except json.JSONDecodeError:
-            raise HTTPException(status_code=500, detail="AI response could not be parsed as JSON.")
+            logger.error("🚨 OpenAI returned invalid JSON!")
+            raise HTTPException(status_code=500, detail="Invalid JSON response from OpenAI.")
+
+        # ✅ Ensure response structure is correct
+        if not isinstance(pm_plan, dict) or "maintenance_plan" not in pm_plan:
+            logger.error("🚨 API returned incorrect format!")
+            raise HTTPException(status_code=500, detail="Invalid API response structure.")
 
         return {"success": True, "data": pm_plan}
 
     except openai.error.OpenAIError as oe:
+        logger.error("🚨 OpenAI API Error: %s", str(oe))
         raise HTTPException(status_code=500, detail=f"OpenAI API Error: {str(oe)}")
 
     except Exception as e:
+        logger.error("❌ Internal Server Error: %s", str(e))
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")

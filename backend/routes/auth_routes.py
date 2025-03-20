@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from ..database import get_supabase_client
+from database import get_supabase_client
 from datetime import datetime, timedelta
 import jwt
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
