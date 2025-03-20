@@ -7,7 +7,7 @@ import axios from "axios";
 import { saveAs } from "file-saver";
 import * as XLSX from "xlsx"; // ✅ Import XLSX for Excel support
 
-const API_BASE_URL = "/api"; // ✅ Ensure backend proxy works
+const API_BASE_URL = "http://0.0.0.0:8000/api"; // ✅ Backend API endpoint
 
 export default function PMPlanner() {
   const [assetData, setAssetData] = useState({
