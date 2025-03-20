@@ -1,9 +1,9 @@
 import logging
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from routes import auth_routes
-from api.generate_pm_plan import router as pm_router
-from database import get_assets
+from .routes import auth_routes
+from .api.generate_pm_plan import router as pm_router
+from .database import get_assets
 
 # ✅ Configure Logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
