@@ -1,11 +1,13 @@
-export function Input({ type = "text", placeholder, value, onChange }) {
+export function Input({ name, value, onChange, type = "text", placeholder, ...rest }) {
   return (
     <input
-      type={type}
-      placeholder={placeholder}
+      name={name}
       value={value}
       onChange={onChange}
-      className="border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+      type={type}
+      placeholder={placeholder}
+      className="border border-gray-300 rounded p-2 w-full"
+      {...rest}
     />
   );
 }

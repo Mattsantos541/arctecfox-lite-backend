@@ -5,10 +5,11 @@ import { Card } from "../components/ui/card";
 import { Table } from "../components/ui/table";
 import axios from "axios";
 import { saveAs } from "file-saver";
-import * as XLSX from "xlsx"; // ✅ Import XLSX for Excel support
+import * as XLSX from "xlsx";
 
-// ✅ Use Environment Variable for Backend URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api"; 
+// ✅ Use proxy-friendly base URL
+const API_BASE_URL = "http://localhost:8000/api";
+
 
 export default function PMPlanner() {
   const [assetData, setAssetData] = useState({
@@ -21,12 +22,16 @@ export default function PMPlanner() {
     environment: "",
   });
 
-  const [pmPlan, setPmPlan] = useState([]); // ✅ Ensure pmPlan is always an array
+  const [pmPlan, setPmPlan] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const handleInputChange = (e) => {
-    setAssetData({ ...assetData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setAssetData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const generatePMPlan = async () => {
@@ -35,90 +40,80 @@ export default function PMPlanner() {
     setError(null);
 
     try {
-      console.log("📤 Sending request to backend:", assetData);
-      const response = await axios.post(`${API_BASE_URL}/generate_pm_plan`, assetData);
+      // Cast hours and cycles to int before sending (if not empty)
+      const payload = {
+        ...assetData,
+        hours: assetData.hours ? parseInt(assetData.hours) : 0,
+        cycles: assetData.cycles ? parseInt(assetData.cycles) : 0,
+      };
 
-      if (response.data && response.data.data && Array.isArray(response.data.data.maintenance_plan)) {
+      console.log("📤 Payload:", payload);
+
+      const response = await axios.post(`${API_BASE_URL}/generate_pm_plan`, payload);
+
+      if (response.data?.data?.maintenance_plan) {
         setPmPlan(response.data.data.maintenance_plan);
-        console.log("✅ Successfully received PM plan:", response.data.data.maintenance_plan);
+        console.log("✅ Received PM Plan:", response.data.data.maintenance_plan);
       } else {
-        console.error("❌ Unexpected API response format:", response.data);
-        throw new Error("Invalid API response format");
+        throw new Error("Invalid API response");
       }
-    } catch (error) {
-      console.error("❌ Error generating PM plan:", error);
-      setError("Failed to generate PM plan. Please check your connection and backend logs.");
+    } catch (err) {
+      console.error("❌ Error generating PM plan:", err);
+      setError("Failed to generate PM plan. Check your input and backend logs.");
     }
 
     setLoading(false);
   };
 
-  // ✅ Convert PM Plan to CSV Format
   const exportToCSV = () => {
-    if (pmPlan.length === 0) {
-      alert("No PM plan available to export.");
-      return;
-    }
-
-    let csvContent = "Task,Interval,Instructions,Reason\n";
-    pmPlan.forEach((task) => {
-      csvContent += `"${task.task_name}","${task.maintenance_interval}","${task.instructions?.join("; ") || "N/A"}","${task.reason}"\n`;
+    if (pmPlan.length === 0) return alert("No PM plan to export.");
+    let csv = "Task,Interval,Instructions,Reason\n";
+    pmPlan.forEach((t) => {
+      csv += `"${t.task_name}","${t.maintenance_interval}","${t.instructions?.join("; ") ?? ""}","${t.reason}"\n`;
     });
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, "pm_plan.csv");
+    saveAs(new Blob([csv], { type: "text/csv;charset=utf-8;" }), "pm_plan.csv");
   };
 
-  // ✅ Convert PM Plan to Excel Format
   const exportToExcel = () => {
-    if (pmPlan.length === 0) {
-      alert("No PM plan available to export.");
-      return;
-    }
-
+    if (pmPlan.length === 0) return alert("No PM plan to export.");
     const data = [["Task", "Interval", "Instructions", "Reason"]];
-    pmPlan.forEach((task) => {
+    pmPlan.forEach((t) =>
       data.push([
-        task.task_name,
-        task.maintenance_interval,
-        task.instructions?.join("; ") || "N/A",
-        task.reason,
-      ]);
-    });
-
+        t.task_name,
+        t.maintenance_interval,
+        t.instructions?.join("; ") ?? "",
+        t.reason,
+      ])
+    );
     const ws = XLSX.utils.aoa_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "PM Plan");
-
     XLSX.writeFile(wb, "pm_plan.xlsx");
   };
 
   return (
     <div className="container mx-auto p-6">
-      {/* ✅ Asset Data Input */}
       <Card title="Asset Data Input">
         <div className="grid grid-cols-2 gap-4">
-          <Input name="name" placeholder="Asset Name" onChange={handleInputChange} />
-          <Input name="model" placeholder="Make & Model" onChange={handleInputChange} />
-          <Input name="serial" placeholder="Serial Number" onChange={handleInputChange} />
-          <Input name="category" placeholder="Asset Category" onChange={handleInputChange} />
-          <Input name="hours" placeholder="Usage Hours" type="number" onChange={handleInputChange} />
-          <Input name="cycles" placeholder="Usage Cycles" type="number" onChange={handleInputChange} />
-          <Input name="environment" placeholder="Environmental Conditions" onChange={handleInputChange} />
+          <Input name="name" value={assetData.name} placeholder="Asset Name" onChange={handleInputChange} />
+          <Input name="model" value={assetData.model} placeholder="Make & Model" onChange={handleInputChange} />
+          <Input name="serial" value={assetData.serial} placeholder="Serial Number" onChange={handleInputChange} />
+          <Input name="category" value={assetData.category} placeholder="Asset Category" onChange={handleInputChange} />
+          <Input name="hours" value={assetData.hours} placeholder="Usage Hours" type="number" onChange={handleInputChange} />
+          <Input name="cycles" value={assetData.cycles} placeholder="Usage Cycles" type="number" onChange={handleInputChange} />
+          <Input name="environment" value={assetData.environment} placeholder="Environmental Conditions" onChange={handleInputChange} />
           <Button onClick={generatePMPlan} disabled={loading}>
             {loading ? "Generating..." : "Generate AI-Powered PM Plan"}
           </Button>
         </div>
       </Card>
 
-      {/* ✅ Show Error Message if API Call Fails */}
       {error && <p className="text-red-500 mt-4">{error}</p>}
 
-      {/* ✅ AI-Powered PM Plan Table with Loading Indicator */}
       <Card title="AI-Powered PM Plan" className="mt-6">
         {loading ? (
           <div className="text-center p-4">
-            <span className="loader"></span>
+            <span className="loader" />
             <p className="mt-2 text-gray-600">Generating PM Plan... Please wait.</p>
           </div>
         ) : pmPlan.length > 0 ? (
@@ -127,7 +122,7 @@ export default function PMPlanner() {
             data={pmPlan.map((task) => [
               task.task_name,
               task.maintenance_interval,
-              task.instructions?.join("; ") || "N/A",
+              task.instructions?.join("; ") ?? "N/A",
               task.reason,
             ])}
           />
@@ -136,7 +131,6 @@ export default function PMPlanner() {
         )}
       </Card>
 
-      {/* ✅ Export & Integration Section */}
       <Card title="Export & Integration" className="mt-6">
         <div className="flex gap-4">
           <Button onClick={exportToCSV}>Download as CSV ⬇️</Button>

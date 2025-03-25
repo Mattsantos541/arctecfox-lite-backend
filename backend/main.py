@@ -6,9 +6,12 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from api.generate_pm_plan import router as pm_router
+from routes.auth_routes import router as auth_router
+from database import get_assets
 from backend.api.generate_pm_plan import router as pm_router
-from backend.routes.auth_routes import router as auth_router
-from backend.database import get_assets
+
+
 
 # ✅ Configure Logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -16,13 +19,15 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+app.include_router(pm_router, prefix="/api")  # ✅ ADD prefix here
+
 # ✅ Log API Startup Event
 logger.info("🚀 FastAPI Server is Starting...")
 
 # ✅ Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 🔥 Change this to specific frontend URL in production
+    allow_origins=["*"],  # 🔥 Change this to specific frontend URL in productiona
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

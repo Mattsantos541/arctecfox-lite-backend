@@ -34,7 +34,8 @@ class AssetData(BaseModel):
     cycles: int
     environment: str
 
-@router.post("/api/generate_pm_plan")
+
+@router.post("/generate_pm_plan")
 async def generate_pm_plan(asset: AssetData):
     """
     Generates a Preventive Maintenance (PM) plan using OpenAI based on asset details.
