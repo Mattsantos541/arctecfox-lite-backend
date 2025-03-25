@@ -1,8 +1,13 @@
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+
 import MainLayout from "./layouts/MainLayout";
-import CompanyOverview from "./pages/CompanyOverview"; 
+import CompanyOverview from "./pages/CompanyOverview";
 import Login from "./pages/Login";
-import CompleteProfile from "./pages/CompleteProfile"; // ✅ Add this
+import CompleteProfile from "./pages/CompleteProfile";
 import PMPlanner from "./pages/PMPlanner";
 import WorkOrders from "./pages/WorkOrders";
 import Reports from "./pages/Reports";
@@ -29,5 +34,7 @@ function App() {
     </Router>
   );
 }
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 
 export default App;
