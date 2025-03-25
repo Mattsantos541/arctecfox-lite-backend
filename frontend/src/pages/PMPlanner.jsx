@@ -49,7 +49,13 @@ export default function PMPlanner() {
 
       console.log("📤 Payload:", payload);
 
-      const response = await axios.post(`${API_BASE_URL}/generate_pm_plan`, payload);
+      const response = await axios.post(`${API_BASE_URL}/generate_pm_plan`, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        withCredentials: true,
+        timeout: 30000,
+      });
 
       if (response.data?.data?.maintenance_plan) {
         setPmPlan(response.data.data.maintenance_plan);
