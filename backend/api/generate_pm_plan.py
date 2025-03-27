@@ -18,8 +18,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 if not api_key:
     raise RuntimeError("🚨 ERROR: OPENAI_API_KEY is missing! Please check your .env file.")
 
-# ✅ Set OpenAI API client
-client = openai.OpenAI(api_key=api_key)
+# ✅ Set the API key for OpenAI
+openai.api_key = api_key
 
 # ✅ Define FastAPI Router
 router = APIRouter()
@@ -33,7 +33,6 @@ class AssetData(BaseModel):
     hours: int
     cycles: int
     environment: str
-
 
 @router.post("/generate_pm_plan")
 async def generate_pm_plan(asset: AssetData):
@@ -97,9 +96,9 @@ async def generate_pm_plan(asset: AssetData):
         }}
         """
 
-        # ✅ Call OpenAI API using new syntax
-        response = client.chat.completions.create(
-            model="gpt-4-turbo",
+        # ✅ Call OpenAI API using the updated syntax
+        response = openai.ChatCompletion.create(
+            model="gpt-4-turbo",  # Change to "gpt-3.5-turbo" if you don't have GPT-4 access
             messages=[{"role": "system", "content": prompt}],
             temperature=0.7
         )

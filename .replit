@@ -20,6 +20,7 @@ externalPort = 3001
 [[ports]]
 localPort = 5173
 externalPort = 80
+exposeLocalhost = true
 
 [[ports]]
 localPort = 5174
@@ -60,4 +61,4 @@ args = "cd backend && PYTHONPATH=backend uvicorn main:app --host 0.0.0.0 --port 
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd frontend && npm run dev -- --host 0.0.0.0 --port 3000"
+args = "cd frontend && npm run dev "
