@@ -98,7 +98,7 @@ async def generate_pm_plan(asset: AssetData):
 
         # ✅ Call OpenAI API using the updated syntax
         response = openai.ChatCompletion.create(
-            model="gpt-4-turbo",  # Change to "gpt-3.5-turbo" if you don't have GPT-4 access
+            model="gpt-3.5-turbo",  # Change to "gpt-3.5-turbo" if you don't have GPT-4 access
             messages=[{"role": "system", "content": prompt}],
             temperature=0.7
         )

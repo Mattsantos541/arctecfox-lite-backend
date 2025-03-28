@@ -4,10 +4,13 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    host: true, // Exposes the server
-    allowedHosts: [
-      '8e765ae3-27d1-4c38-8a73-eaf9fff7b365-00-2nscoe9m1740v.spock.replit.dev'
-    ],
+    host: "0.0.0.0",
+    allowedHosts: [process.env.VITE_PUBLIC_HOST || "all"],
+    hmr: {
+      host: process.env.VITE_PUBLIC_HOST || "all",
+      protocol: "wss",
+      clientPort: 443,
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
