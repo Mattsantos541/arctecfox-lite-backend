@@ -54,51 +54,29 @@ async def generate_pm_plan(asset: AssetData):
             "environment": asset.environment,
         }
 
-        # ✅ Construct prompt for OpenAI
+        # ✅ Construct prompt for OpenAI with updated instructions
         prompt = f"""
-        Create a detailed preventive maintenance plan for the following asset:
+Create a detailed preventive maintenance plan for the following asset:
 
-        {json.dumps(asset_data, indent=2)}
+{json.dumps(asset_data, indent=2)}
 
-        **Instructions:**
-        - Provide structured **JSON output** with a list of maintenance tasks.
-        - Each task must include:
-          1. **Task Name**
-          2. **Maintenance Interval** (Daily, Weekly, Monthly, Quarterly, Annual)
-          3. **Step-by-step Instructions**
-          4. **Reason for the Task**
-          5. **Safety Precautions**
-
-        **Output Format (JSON Example):**
-        {{
-            "maintenance_plan": [
-                {{
-                    "task_name": "Visual Inspection",
-                    "maintenance_interval": "Daily",
-                    "instructions": [
-                        "Inspect for any leaks or unusual noises",
-                        "Check for any visible damage or wear",
-                        "Ensure proper alignment and mounting"
-                    ],
-                    "reason": "To identify potential issues early and prevent breakdowns",
-                    "safety_precautions": "Ensure the pump is turned off before inspecting"
-                }},
-                {{
-                    "task_name": "Lubrication",
-                    "maintenance_interval": "Monthly",
-                    "instructions": [
-                        "Apply lubricant to all moving parts as per manufacturer’s recommendations"
-                    ],
-                    "reason": "To reduce friction and wear on moving parts",
-                    "safety_precautions": "Wear appropriate PPE when handling lubricants"
-                }}
-            ]
-        }}
-        """
+Instructions:
+- Provide a structured JSON output with a key "maintenance_plan" that contains an array of maintenance task objects.
+- Each task object must include the following fields:
+  - "task_name": a string representing the name of the maintenance task.
+  - "maintenance_interval": a string that can be one of: "Daily", "Weekly", "Monthly", "Quarterly", "Annual".
+  - "instructions": an array of step-by-step instructions (each as a string).
+  - "reason": a string describing why the task is necessary.
+  - "safety_precautions": a string listing any safety precautions.
+  - "expected_duration": a string or number indicating the expected duration of the task.
+  - "expected_cost": a string or number indicating the approximate cost.
+  - "source_information": a string describing the source of the maintenance information.
+- Do not include any additional commentary or explanation. Output only valid JSON.
+"""
 
         # ✅ Call OpenAI API using the updated syntax
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Change to "gpt-3.5-turbo" if you don't have GPT-4 access
+            model="gpt-3.5-turbo",  # or "gpt-4-turbo" if you have access
             messages=[{"role": "system", "content": prompt}],
             temperature=0.7
         )
