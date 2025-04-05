@@ -2,8 +2,9 @@ import { useState } from "react";
 import axios from "axios";
 import { saveAs } from "file-saver";
 import * as XLSX from "xlsx";
+import MainLayout from "../layouts/MainLayout";
 
-// --- Placeholder UI Components ---
+// UI Components
 function Input({ label, name, value, onChange, placeholder, type = "text" }) {
   return (
     <div className="flex flex-col mb-2">
@@ -40,16 +41,11 @@ function Card({ title, children }) {
     </div>
   );
 }
-// --- End Placeholder UI Components ---
 
 const API_BASE_URL = "/api";
 
 export default function PMPlanner() {
-  const [userInfo, setUserInfo] = useState({
-    email: "",
-    company: "",
-  });
-
+  const [userInfo, setUserInfo] = useState({ email: "", company: "" });
   const [assetData, setAssetData] = useState({
     name: "",
     model: "",
@@ -59,25 +55,18 @@ export default function PMPlanner() {
     cycles: "",
     environment: "",
   });
-
   const [pmPlan, setPmPlan] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const handleUserInfoChange = (e) => {
     const { name, value } = e.target;
-    setUserInfo((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setUserInfo((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setAssetData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setAssetData((prev) => ({ ...prev, [name]: value }));
   };
 
   const generatePMPlan = async () => {
@@ -94,25 +83,20 @@ export default function PMPlanner() {
         company: userInfo.company || null,
       };
 
-      console.log("📤 Payload:", payload);
-
       const response = await axios.post(`${API_BASE_URL}/generate_pm_plan`, payload, {
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         withCredentials: true,
         timeout: 30000,
       });
 
       if (response.data?.data?.maintenance_plan) {
         setPmPlan(response.data.data.maintenance_plan);
-        console.log("✅ Received PM Plan:", response.data.data.maintenance_plan);
       } else {
         throw new Error("Invalid API response");
       }
     } catch (err) {
-      console.error("❌ Error generating PM plan:", err);
       setError("Failed to generate PM plan. Check your input and backend logs.");
+      console.error("❌ Error generating PM plan:", err);
     }
 
     setLoading(false);
@@ -135,10 +119,7 @@ export default function PMPlanner() {
   };
 
   return (
-    <div className="flex flex-col w-full p-4 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">ArcTecFox PM Planner (Lite)</h1>
-
-      {/* Card: Email & Company */}
+    <MainLayout>
       <Card title="Optional Contact Info">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
@@ -158,7 +139,6 @@ export default function PMPlanner() {
         </div>
       </Card>
 
-      {/* Card: Asset Input */}
       <Card title="Asset Data Input">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input label="Asset Name" name="name" value={assetData.name} onChange={handleInputChange} placeholder="e.g. Hydraulic Pump" />
@@ -176,7 +156,6 @@ export default function PMPlanner() {
         </div>
       </Card>
 
-      {/* Card: PM Plan Preview */}
       <Card title="AI-Powered PM Plan">
         {loading ? (
           <div className="flex items-center justify-center py-8">
@@ -226,7 +205,6 @@ export default function PMPlanner() {
         )}
       </Card>
 
-      {/* Card: Export Options */}
       <Card title="Export & Integration">
         <div className="flex space-x-4">
           <Button onClick={exportToCSV} disabled={pmPlan.length === 0}>Download as CSV</Button>
@@ -234,12 +212,11 @@ export default function PMPlanner() {
         </div>
       </Card>
 
-      {/* Error Message */}
       {error && (
         <div className="bg-red-100 text-red-600 p-3 rounded mt-4">
           {error}
         </div>
       )}
-    </div>
+    </MainLayout>
   );
 }

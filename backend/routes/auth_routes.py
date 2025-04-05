@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+routefrom fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from database import get_supabase_client
 from datetime import datetime, timedelta
