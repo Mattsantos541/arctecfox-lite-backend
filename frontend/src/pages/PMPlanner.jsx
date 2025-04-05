@@ -4,7 +4,6 @@ import { saveAs } from "file-saver";
 import * as XLSX from "xlsx";
 
 // --- Placeholder UI Components ---
-// You can replace these with your own UI components (e.g., from Tailwind UI or your design system)
 function Input({ label, name, value, onChange, placeholder, type = "text" }) {
   return (
     <div className="flex flex-col mb-2">
@@ -41,13 +40,16 @@ function Card({ title, children }) {
     </div>
   );
 }
-
 // --- End Placeholder UI Components ---
 
-// Use proxy-friendly base URL (ensure vite.config.js proxies /api to your FastAPI backend)
 const API_BASE_URL = "/api";
 
 export default function PMPlanner() {
+  const [userInfo, setUserInfo] = useState({
+    email: "",
+    company: "",
+  });
+
   const [assetData, setAssetData] = useState({
     name: "",
     model: "",
@@ -58,11 +60,18 @@ export default function PMPlanner() {
     environment: "",
   });
 
-  const [pmPlan, setPmPlan] = useState([]);   // Array of maintenance tasks
+  const [pmPlan, setPmPlan] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Handle input changes
+  const handleUserInfoChange = (e) => {
+    const { name, value } = e.target;
+    setUserInfo((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setAssetData((prev) => ({
@@ -71,18 +80,18 @@ export default function PMPlanner() {
     }));
   };
 
-  // Call backend API to generate PM plan
   const generatePMPlan = async () => {
     setLoading(true);
     setPmPlan([]);
     setError(null);
 
     try {
-      // Convert hours and cycles to numbers
       const payload = {
         ...assetData,
         hours: assetData.hours ? parseInt(assetData.hours) : 0,
         cycles: assetData.cycles ? parseInt(assetData.cycles) : 0,
+        email: userInfo.email || null,
+        company: userInfo.company || null,
       };
 
       console.log("📤 Payload:", payload);
@@ -109,7 +118,6 @@ export default function PMPlanner() {
     setLoading(false);
   };
 
-  // Export the PM plan as CSV
   const exportToCSV = () => {
     const worksheet = XLSX.utils.json_to_sheet(pmPlan);
     const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
@@ -117,7 +125,6 @@ export default function PMPlanner() {
     saveAs(blob, "PMPlan.csv");
   };
 
-  // Export the PM plan as XLSX
   const exportToXLSX = () => {
     const worksheet = XLSX.utils.json_to_sheet(pmPlan);
     const workbook = XLSX.utils.book_new();
@@ -128,64 +135,39 @@ export default function PMPlanner() {
   };
 
   return (
-    <div className="flex flex-col w-full p-4">
-      {/* Page Title */}
-      <h1 className="text-2xl font-bold mb-4">Preventive Maintenance Planner</h1>
+    <div className="flex flex-col w-full p-4 max-w-5xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">ArcTecFox PM Planner (Lite)</h1>
 
-      {/* Card: Asset Data Input */}
-      <Card title="Asset Data Input">
+      {/* Card: Email & Company */}
+      <Card title="Optional Contact Info">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
-            label="Asset Name"
-            name="name"
-            value={assetData.name}
-            onChange={handleInputChange}
-            placeholder="e.g. Hydraulic Pump"
+            label="Email (optional)"
+            name="email"
+            value={userInfo.email}
+            onChange={handleUserInfoChange}
+            placeholder="e.g. jane@factory.com"
           />
           <Input
-            label="Model"
-            name="model"
-            value={assetData.model}
-            onChange={handleInputChange}
-            placeholder="e.g. XJ-2000"
+            label="Company (optional)"
+            name="company"
+            value={userInfo.company}
+            onChange={handleUserInfoChange}
+            placeholder="e.g. XYZ Manufacturing"
           />
-          <Input
-            label="Serial Number"
-            name="serial"
-            value={assetData.serial}
-            onChange={handleInputChange}
-            placeholder="e.g. SN12345"
-          />
-          <Input
-            label="Asset Category"
-            name="category"
-            value={assetData.category}
-            onChange={handleInputChange}
-            placeholder="e.g. Pump"
-          />
-          <Input
-            label="Usage Hours"
-            name="hours"
-            value={assetData.hours}
-            onChange={handleInputChange}
-            placeholder="e.g. 1200"
-            type="number"
-          />
-          <Input
-            label="Usage Cycles"
-            name="cycles"
-            value={assetData.cycles}
-            onChange={handleInputChange}
-            placeholder="e.g. 300"
-            type="number"
-          />
-          <Input
-            label="Environmental Condition"
-            name="environment"
-            value={assetData.environment}
-            onChange={handleInputChange}
-            placeholder="e.g. Outdoor, dusty"
-          />
+        </div>
+      </Card>
+
+      {/* Card: Asset Input */}
+      <Card title="Asset Data Input">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input label="Asset Name" name="name" value={assetData.name} onChange={handleInputChange} placeholder="e.g. Hydraulic Pump" />
+          <Input label="Model" name="model" value={assetData.model} onChange={handleInputChange} placeholder="e.g. XJ-2000" />
+          <Input label="Serial Number" name="serial" value={assetData.serial} onChange={handleInputChange} placeholder="e.g. SN12345" />
+          <Input label="Asset Category" name="category" value={assetData.category} onChange={handleInputChange} placeholder="e.g. Pump" />
+          <Input label="Usage Hours" name="hours" value={assetData.hours} onChange={handleInputChange} placeholder="e.g. 1200" type="number" />
+          <Input label="Usage Cycles" name="cycles" value={assetData.cycles} onChange={handleInputChange} placeholder="e.g. 300" type="number" />
+          <Input label="Environmental Condition" name="environment" value={assetData.environment} onChange={handleInputChange} placeholder="e.g. Outdoor, dusty" />
         </div>
         <div className="mt-4">
           <Button onClick={generatePMPlan} disabled={loading}>
@@ -194,28 +176,13 @@ export default function PMPlanner() {
         </div>
       </Card>
 
-      {/* Card: AI-Powered PM Plan Preview */}
+      {/* Card: PM Plan Preview */}
       <Card title="AI-Powered PM Plan">
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <svg
-              className="animate-spin h-5 w-5 mr-2 text-blue-600"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-                fill="none"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              ></path>
+            <svg className="animate-spin h-5 w-5 mr-2 text-blue-600" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
             <span className="text-gray-700">Generating PM Plan...</span>
           </div>
@@ -259,18 +226,15 @@ export default function PMPlanner() {
         )}
       </Card>
 
-      {/* Card: Export & Integration */}
+      {/* Card: Export Options */}
       <Card title="Export & Integration">
         <div className="flex space-x-4">
-          <Button onClick={exportToCSV} disabled={pmPlan.length === 0}>
-            Download as CSV
-          </Button>
-          <Button onClick={exportToXLSX} disabled={pmPlan.length === 0}>
-            Download as Excel
-          </Button>
+          <Button onClick={exportToCSV} disabled={pmPlan.length === 0}>Download as CSV</Button>
+          <Button onClick={exportToXLSX} disabled={pmPlan.length === 0}>Download as Excel</Button>
         </div>
       </Card>
 
+      {/* Error Message */}
       {error && (
         <div className="bg-red-100 text-red-600 p-3 rounded mt-4">
           {error}
