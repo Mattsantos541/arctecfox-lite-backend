@@ -48,10 +48,3 @@ def generate_pm_plan(data: AssetData):
             "safety_precautions": "Wear mask and gloves"
         }
     ]
-
-    return {
-        "status": "success",
-        "data": {
-            "maintenance_plan": mock_plan
-        }
-    }

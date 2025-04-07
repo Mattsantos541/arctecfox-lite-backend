@@ -32,6 +32,7 @@ def generate_pm_plan(data: AssetData):
     except Exception as e:
         print("⚠️ Failed to write to log file:", e)
 
+    # ✅ This is the corrected and closed list
     mock_plan = [
         {
             "task_name": "Inspect bearings",
@@ -40,20 +41,18 @@ def generate_pm_plan(data: AssetData):
             "reason": "Prevent mechanical failure due to friction",
             "safety_precautions": "Lockout/tagout before inspection"
         },
-      mock_plan = [
-          {
-              "task_name": "Inspect bearings",
-              "maintenance_interval": "Every 3 months",
-              "instructions": ["Check for wear", "Lubricate bearings"],
-              "reason": "Prevent mechanical failure due to friction",
-              "safety_precautions": "Lockout/tagout before inspection"
-          },
-          {
-              "task_name": "Replace air filter",
-              "maintenance_interval": "Every 6 months",
-              "instructions": ["Turn off equipment", "Replace filter cartridge"],
-              "reason": "Ensure clean airflow and optimal performance",
-              "safety_precautions": "Wear mask and gloves"
-          }
-      ]
+        {
+            "task_name": "Replace air filter",
+            "maintenance_interval": "Every 6 months",
+            "instructions": ["Turn off equipment", "Replace filter cartridge"],
+            "reason": "Ensure clean airflow and optimal performance",
+            "safety_precautions": "Wear mask and gloves"
+        }
+    ]
 
+    return {
+        "status": "success",
+        "data": {
+            "maintenance_plan": mock_plan
+        }
+    }
