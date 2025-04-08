@@ -1,3 +1,4 @@
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
@@ -77,17 +78,21 @@ def generate_pm_plan(data: AssetData):
             max_tokens=1200
         )
 
-        pm_plan_text = response.get('choices', [{}])[0].get('message' {}).get('content', '')
-
-
-
-
-        return {
-            "status": "success",
-            "data": {
-                "maintenance_plan_text": pm_plan_text
-            }
-        }
+        # Safely access the response content
+        if response and isinstance(response, dict):
+            choices = response.get('choices', [])
+            if choices and len(choices) > 0:
+                message = choices[0].get('message', {})
+                pm_plan_text = message.get('content', '')
+                if pm_plan_text:
+                    return {
+                        "status": "success",
+                        "data": {
+                            "maintenance_plan_text": pm_plan_text
+                        }
+                    }
+        
+        raise ValueError("Invalid response format from OpenAI API")
 
     except Exception as e:
         print("❌ OpenAI API error:", e)
