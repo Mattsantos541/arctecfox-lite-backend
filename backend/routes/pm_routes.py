@@ -77,7 +77,10 @@ def generate_pm_plan(data: AssetData):
             max_tokens=1200
         )
 
-        pm_plan_text = response['choices'][0]['message']['content']
+        pm_plan_text = response.get('choices', [{}])[0].get('message' {}).get('content', '')
+
+
+
 
         return {
             "status": "success",

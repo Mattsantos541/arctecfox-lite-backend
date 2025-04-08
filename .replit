@@ -34,7 +34,7 @@ localPort = 9000
 externalPort = 9000
 
 [workflows]
-runButton = "Dev"
+runButton = "Dev Servers"
 
 [[workflows.workflow]]
 name = "Backend & Frontend"
@@ -61,29 +61,3 @@ args = "cd backend && PYTHONPATH=backend uvicorn main:app --host 0.0.0.0 --port 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd frontend && npm run dev "
-
-[[workflows.workflow]]
-name = "Development"
-author = 2231033
-mode = "parallel"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd backend && PYTHONPATH=. uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd frontend && npm run dev -- --host 0.0.0.0 --port 5173"
-
-[[workflows.workflow]]
-name = "Dev"
-author = 2231033
-mode = "parallel"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd backend && PYTHONPATH=. uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd frontend && npm run dev -- --host 0.0.0.0 --port 5173"
