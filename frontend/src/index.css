@@ -3,6 +3,11 @@
 @tailwind components;
 @tailwind utilities;
 
+.input {
+  @apply border p-2 rounded w-full;
+}
+
+
 @layer base {
   body {
     @apply antialiased;

@@ -1,4 +1,3 @@
-
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -16,7 +15,4 @@ export default {
     },
   },
   plugins: [],
-}
-.input {
-  @apply border p-2 rounded w-full;
 }
