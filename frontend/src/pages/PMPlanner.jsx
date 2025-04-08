@@ -3,7 +3,9 @@ import ReactMarkdown from "react-markdown";
 import * as XLSX from "xlsx";
 
 // 👇 Replace this with your real backend URL
-const BACKEND_URL = "https://b4e41ee1-2b38-4726-b238-4a8f797ea7df-00-29exdnoe4vtox.worf.replit.dev:8000";
+const BACKEND_URL = window.location.hostname.includes('replit.dev') 
+  ? `https://${window.location.hostname}:8000` 
+  : 'http://localhost:8000';
 
 
 
