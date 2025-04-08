@@ -1,142 +1,225 @@
-import React, { useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { useState } from "react";
+import axios from "axios";
+import { saveAs } from "file-saver";
 import * as XLSX from "xlsx";
+import MainLayout from "../layouts/MainLayout";
 
-// 👇 Replace this with your real backend URL
-const BACKEND_URL = window.location.hostname.includes('replit.dev') 
-  ? `https://${window.location.hostname}:8000` 
-  : 'http://localhost:8000';
+// ----- Reusable UI Components -----
+function Input({ label, name, value, onChange, placeholder, type = "text" }) {
+  return (
+    <div className="flex flex-col mb-2">
+      {label && <label className="font-medium mb-1">{label}</label>}
+      <input
+        className="border border-gray-300 rounded px-2 py-1"
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+      />
+    </div>
+  );
+}
 
+function Button({ onClick, children, disabled }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+    >
+      {children}
+    </button>
+  );
+}
 
+function Card({ title, children }) {
+  return (
+    <div className="bg-white shadow rounded p-4 mb-4">
+      {title && <h2 className="text-lg font-semibold mb-2">{title}</h2>}
+      {children}
+    </div>
+  );
+}
+// -----------------------------------
 
-const PMPlanner = () => {
+const API_BASE_URL = "/api";
+
+export default function PMPlanner() {
+  const [userInfo, setUserInfo] = useState({ email: "", company: "" });
   const [assetData, setAssetData] = useState({
     name: "",
     model: "",
     serial: "",
     category: "",
-    hours: 0,
-    cycles: 0,
+    hours: "",
+    cycles: "",
     environment: "",
-    email: "",
-    company: ""
   });
 
-  const [planText, setPlanText] = useState("");
+  const [pmPlan, setPmPlan] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
 
-  const handleChange = (e) => {
-    setAssetData({
-      ...assetData,
-      [e.target.name]: e.target.value
-    });
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setAssetData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async () => {
+  const handleUserInfoChange = (e) => {
+    const { name, value } = e.target;
+    setUserInfo((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const generatePMPlan = async () => {
     setLoading(true);
-    setError("");
-    setPlanText("");
+    setError(null);
+    setPmPlan([]);
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/generate_pm_plan`, {
-        method: "POST",
+      const payload = {
+        ...assetData,
+        hours: parseInt(assetData.hours || 0),
+        cycles: parseInt(assetData.cycles || 0),
+        email: userInfo.email || null,
+        company: userInfo.company || null,
+      };
+
+      const response = await axios.post(`${API_BASE_URL}/generate_pm_plan`, payload, {
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(assetData),
+        withCredentials: true,
       });
 
-
-      const result = await response.json();
-
-      if (result.status === "success") {
-        setPlanText(result.data.maintenance_plan_text);
+      if (response.data?.data?.maintenance_plan) {
+        setPmPlan(response.data.data.maintenance_plan);
       } else {
-        setError("Failed to generate PM plan: " + result.message);
+        throw new Error("Invalid response format from API.");
       }
     } catch (err) {
-      setError("Error connecting to API: " + err.message);
+      console.error("Error generating PM plan:", err);
+      setError("Something went wrong while generating the PM plan.");
     } finally {
       setLoading(false);
     }
   };
 
-  const downloadExcel = () => {
-    const lines = planText.split("\n").filter(line => line.trim() !== "");
-    const data = lines.map((line, index) => ({ Step: index + 1, Instruction: line }));
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "PM Plan");
-    XLSX.writeFile(workbook, `${assetData.name.replace(/\s+/g, "_")}_PM_Plan.xlsx`);
-  };
-
-  const downloadCSV = () => {
-    const lines = planText.split("\n").filter(line => line.trim() !== "");
-    const data = lines.map((line, index) => ({ Step: index + 1, Instruction: line }));
-    const worksheet = XLSX.utils.json_to_sheet(data);
+  const exportToCSV = () => {
+    const worksheet = XLSX.utils.json_to_sheet(pmPlan);
     const csv = XLSX.utils.sheet_to_csv(worksheet);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `${assetData.name.replace(/\s+/g, "_")}_PM_Plan.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    saveAs(blob, "PMPlan.csv");
+  };
+
+  const exportToExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(pmPlan);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "PMPlan");
+    const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([buffer], { type: "application/octet-stream" });
+    saveAs(blob, "PMPlan.xlsx");
   };
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">AI-Powered PM Planner</h1>
-
-      <div className="grid gap-4">
-        <input type="text" name="name" placeholder="Asset Name" className="input" value={assetData.name} onChange={handleChange} />
-        <input type="text" name="model" placeholder="Model" className="input" value={assetData.model} onChange={handleChange} />
-        <input type="text" name="serial" placeholder="Serial Number" className="input" value={assetData.serial} onChange={handleChange} />
-        <input type="text" name="category" placeholder="Asset Category" className="input" value={assetData.category} onChange={handleChange} />
-        <input type="number" name="hours" placeholder="Usage Hours" className="input" value={assetData.hours} onChange={handleChange} />
-        <input type="number" name="cycles" placeholder="Usage Cycles" className="input" value={assetData.cycles} onChange={handleChange} />
-        <input type="text" name="environment" placeholder="Environmental Conditions" className="input" value={assetData.environment} onChange={handleChange} />
-        <input type="email" name="email" placeholder="Your Email (Optional)" className="input" value={assetData.email} onChange={handleChange} />
-        <input type="text" name="company" placeholder="Company (Optional)" className="input" value={assetData.company} onChange={handleChange} />
-
-        <button
-          onClick={handleSubmit}
-          className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
-          disabled={loading}
-        >
-          {loading ? "Generating..." : "Generate PM Plan"}
-        </button>
-      </div>
-
-      {loading && (
-        <div className="flex items-center mt-6 justify-center text-blue-600">
-          <svg className="animate-spin h-8 w-8 mr-2" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          <span className="text-lg">Generating PM Plan...</span>
+    <MainLayout>
+      {/* Contact Info */}
+      <Card title="Optional Contact Info">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label="Email (optional)"
+            name="email"
+            value={userInfo.email}
+            onChange={handleUserInfoChange}
+            placeholder="e.g. jane@factory.com"
+          />
+          <Input
+            label="Company (optional)"
+            name="company"
+            value={userInfo.company}
+            onChange={handleUserInfoChange}
+            placeholder="e.g. XYZ Manufacturing"
+          />
         </div>
-      )}
+      </Card>
 
-      {error && <p className="text-red-600 mt-4">{error}</p>}
+      {/* Asset Input */}
+      <Card title="Asset Data Input">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input label="Asset Name" name="name" value={assetData.name} onChange={handleInputChange} placeholder="e.g. Hydraulic Pump" />
+          <Input label="Model" name="model" value={assetData.model} onChange={handleInputChange} placeholder="e.g. XJ-2000" />
+          <Input label="Serial Number" name="serial" value={assetData.serial} onChange={handleInputChange} placeholder="e.g. SN12345" />
+          <Input label="Asset Category" name="category" value={assetData.category} onChange={handleInputChange} placeholder="e.g. Pump" />
+          <Input label="Usage Hours" name="hours" value={assetData.hours} onChange={handleInputChange} placeholder="e.g. 1200" type="number" />
+          <Input label="Usage Cycles" name="cycles" value={assetData.cycles} onChange={handleInputChange} placeholder="e.g. 300" type="number" />
+          <Input label="Environmental Condition" name="environment" value={assetData.environment} onChange={handleInputChange} placeholder="e.g. Outdoor, dusty" />
+        </div>
 
-      {planText && (
-        <div className="mt-6 p-4 bg-gray-100 rounded shadow">
-          <h2 className="text-xl font-semibold mb-4">Generated PM Plan</h2>
-          <ReactMarkdown className="prose whitespace-pre-wrap">{planText}</ReactMarkdown>
+        <div className="mt-4">
+          <Button onClick={generatePMPlan} disabled={loading}>
+            {loading ? "Generating..." : "Generate AI-Powered PM Plan"}
+          </Button>
+        </div>
+      </Card>
 
-          <div className="mt-4 flex gap-4">
-            <button onClick={downloadExcel} className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700">
-              Download as Excel
-            </button>
-            <button onClick={downloadCSV} className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600">
-              Download as CSV
-            </button>
+      {/* PM Plan Preview */}
+      <Card title="AI-Powered PM Plan">
+        {loading ? (
+          <div className="flex items-center justify-center py-6">
+            <svg className="animate-spin h-5 w-5 mr-3 text-blue-600" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <span className="text-gray-700">Generating PM Plan...</span>
           </div>
-        </div>
-      )}
-    </div>
-  );
-};
+        ) : pmPlan.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm text-left border border-gray-200">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-4 py-2 border-b">Task</th>
+                  <th className="px-4 py-2 border-b">Interval</th>
+                  <th className="px-4 py-2 border-b">Instructions</th>
+                  <th className="px-4 py-2 border-b">Reason</th>
+                  <th className="px-4 py-2 border-b">Safety</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pmPlan.map((task, i) => (
+                  <tr key={i} className="border-b">
+                    <td className="px-4 py-2">{task.task_name}</td>
+                    <td className="px-4 py-2">{task.maintenance_interval}</td>
+                    <td className="px-4 py-2">
+                      {Array.isArray(task.instructions) ? (
+                        <ul className="list-disc list-inside">
+                          {task.instructions.map((instr, idx) => (
+                            <li key={idx}>{instr}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        task.instructions
+                      )}
+                    </td>
+                    <td className="px-4 py-2">{task.reason}</td>
+                    <td className="px-4 py-2">{task.safety_precautions}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-gray-500">No PM Plan generated yet.</p>
+        )}
+      </Card>
 
-export default PMPlanner;
+      {/* Export Options */}
+      <Card title="Export PM Plan">
+        <div className="flex space-x-4">
+          <Button onClick={exportToCSV} disabled={pmPlan.length === 0}>Download as CSV</Button>
+          <Button onClick={exportToExcel} disabled={pmPlan.length === 0}>Download as Excel</Button>
+        </div>
+      </Card>
+
+      {/* Error Message */}
+      {error && <div className="bg-red-100 text-red-700 px-4 py-3 rounded mt-4">{error}</div>}
+    </MainLayout>
+  );
+}
