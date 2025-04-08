@@ -16,6 +16,10 @@
 }
 
 @layer components {
+  .input {
+    @apply border p-2 rounded w-full;
+  }
+
   .custom-body {
     @apply bg-gray-100 text-gray-900;
   }
