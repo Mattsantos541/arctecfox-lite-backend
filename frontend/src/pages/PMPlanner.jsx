@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
-
+import * as XLSX from "xlsx";
 
 const PMPlanner = () => {
   const [assetData, setAssetData] = useState({
@@ -52,14 +52,28 @@ const PMPlanner = () => {
     }
   };
 
-  const downloadTxtFile = () => {
-    const blob = new Blob([planText], { type: "text/plain" });
+  const downloadExcel = () => {
+    const lines = planText.split("\n").filter(line => line.trim() !== "");
+    const data = lines.map((line, index) => ({ Step: index + 1, Instruction: line }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "PM Plan");
+    XLSX.writeFile(workbook, `${assetData.name.replace(/\s+/g, "_")}_PM_Plan.xlsx`);
+  };
+
+  const downloadCSV = () => {
+    const lines = planText.split("\n").filter(line => line.trim() !== "");
+    const data = lines.map((line, index) => ({ Step: index + 1, Instruction: line }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const csv = XLSX.utils.sheet_to_csv(worksheet);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${assetData.name.replace(/\s+/g, "_")}_PM_Plan.txt`;
+    link.setAttribute("download", `${assetData.name.replace(/\s+/g, "_")}_PM_Plan.csv`);
+    document.body.appendChild(link);
     link.click();
-    URL.revokeObjectURL(url);
+    document.body.removeChild(link);
   };
 
   return (
@@ -87,12 +101,12 @@ const PMPlanner = () => {
       </div>
 
       {loading && (
-        <div className="flex items-center mt-4 text-blue-600">
-          <svg className="animate-spin h-5 w-5 mr-2 text-blue-600" viewBox="0 0 24 24">
+        <div className="flex items-center mt-6 justify-center text-blue-600">
+          <svg className="animate-spin h-8 w-8 mr-2" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          Generating PM Plan...
+          <span className="text-lg">Generating PM Plan...</span>
         </div>
       )}
 
@@ -100,15 +114,17 @@ const PMPlanner = () => {
 
       {planText && (
         <div className="mt-6 p-4 bg-gray-100 rounded shadow">
-          <h2 className="text-xl font-semibold mb-2">Generated PM Plan</h2>
+          <h2 className="text-xl font-semibold mb-4">Generated PM Plan</h2>
           <ReactMarkdown className="prose whitespace-pre-wrap">{planText}</ReactMarkdown>
 
-          <button
-            onClick={downloadTxtFile}
-            className="mt-4 bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700"
-          >
-            Download as TXT
-          </button>
+          <div className="mt-4 flex gap-4">
+            <button onClick={downloadExcel} className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700">
+              Download as Excel
+            </button>
+            <button onClick={downloadCSV} className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-600">
+              Download as CSV
+            </button>
+          </div>
         </div>
       )}
     </div>
