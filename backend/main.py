@@ -24,9 +24,9 @@ app.include_router(pm_router, prefix="/api")
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: tighten before prod
+    allow_origins=["http://localhost:5173", "http://0.0.0.0:5173"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
