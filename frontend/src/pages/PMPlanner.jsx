@@ -2,6 +2,11 @@ import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import * as XLSX from "xlsx";
 
+// 👇 Replace this with your real backend URL
+const BACKEND_URL = "https://b4e41ee1-2b38-4726-b238-4a8f797ea7df-00-29exdnoe4vtox.worf.replit.dev:8000";
+
+
+
 const PMPlanner = () => {
   const [assetData, setAssetData] = useState({
     name: "",
@@ -32,11 +37,12 @@ const PMPlanner = () => {
     setPlanText("");
 
     try {
-      const response = await fetch("/api/generate_pm_plan", {
+      const response = await fetch(`${BACKEND_URL}/api/generate_pm_plan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(assetData),
       });
+
 
       const result = await response.json();
 
