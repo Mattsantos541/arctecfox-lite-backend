@@ -1,16 +1,12 @@
-
+import os
+import json
+import openai
+from datetime import datetime
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
-import json
-import openai
-import os
 
 router = APIRouter()
-
-# Make sure to set your OpenAI API key in your environment
-openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class AssetData(BaseModel):
     name: str
@@ -23,9 +19,23 @@ class AssetData(BaseModel):
     email: Optional[str] = None
     company: Optional[str] = None
 
-def build_prompt(data: AssetData) -> str:
-    return f"""
-Generate a detailed preventive maintenance (PM) plan for the following asset:
+@router.post("/generate_pm_plan")
+def generate_pm_plan(data: AssetData):
+    # Log the incoming request
+    print("📥 New PM Plan Request")
+    print("Asset Data:", data.dict())
+    try:
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "input": data.dict()
+        }
+        with open("pm_lite_logs.txt", "a") as f:
+            f.write(json.dumps(log_entry) + "\n")
+    except Exception as e:
+        print("⚠️ Failed to write to log file:", e)
+
+    # Construct the prompt for OpenAI using the asset details.
+    prompt = f"""Generate a detailed preventive maintenance (PM) plan for the following asset:
 
 - **Asset Name**: {data.name}
 - **Model**: {data.model}
@@ -45,58 +55,28 @@ For each PM task:
 5. Highlight common failure points this task prevents.
 6. Tailor instructions based on the provided usage and environmental conditions.
 
-The plan should be easy for a technician to follow, with helpful notes and context when needed.
-"""
-
-@router.post("/generate_pm_plan")
-def generate_pm_plan(data: AssetData):
-    print("📥 New PM Plan Request")
-    print("Asset Data:", data.dict())
+The plan should be easy for a technician to follow, with helpful notes and context when needed."""
 
     try:
-        log_entry = {
-            "timestamp": datetime.utcnow().isoformat(),
-            "input": data.dict()
-        }
-        with open("pm_lite_logs.txt", "a") as f:
-            f.write(json.dumps(log_entry) + "\n")
-    except Exception as e:
-        print("⚠️ Failed to write to log file:", e)
+        # Set your OpenAI API key from the environment (make sure it's set in your Replit secrets)
+        openai.api_key = os.getenv("OPENAI_API_KEY")
 
-    # 🔥 Call OpenAI
-    try:
-        prompt = build_prompt(data)
-        print("🧠 Sending prompt to OpenAI")
-
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
+        # Call OpenAI's ChatCompletion API with the prompt.
+        ai_response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are an expert industrial maintenance planner."},
+                {"role": "system", "content": "You are an expert in preventive maintenance planning."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
-            max_tokens=1200
+            max_tokens=1500  # Adjust the token size as required
         )
 
-        # Safely access the response content
-        if response and isinstance(response, dict):
-            choices = response.get('choices', [])
-            if choices and len(choices) > 0:
-                message = choices[0].get('message', {})
-                pm_plan_text = message.get('content', '')
-                if pm_plan_text:
-                    return {
-                        "status": "success",
-                        "data": {
-                            "maintenance_plan_text": pm_plan_text
-                        }
-                    }
-        
-        raise ValueError("Invalid response format from OpenAI API")
+        # Extract the generated maintenance plan text.
+        maintenance_plan_text = ai_response['choices'][0]['message']['content']
 
+        # Return the response in a JSON format that the frontend expects.
+        return {"data": {"maintenance_plan": maintenance_plan_text}}
     except Exception as e:
-        print("❌ OpenAI API error:", e)
-        return {
-            "status": "error",
-            "message": str(e)
-        }
+        print("⚠️ Failed to generate maintenance plan:", e)
+        return {"status": "error", "message": str(e)}
