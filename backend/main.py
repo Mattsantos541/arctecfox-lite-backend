@@ -1,15 +1,13 @@
-
 import logging
 import sys
 import os
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from routes.pm_routes import router as pm_router
 
 # Ensure current directory is on sys.path
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-
-from routes.pm_routes import router as pm_router
-from routes.auth_routes import router as auth_router  # optional
 
 # Logging config
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -17,12 +15,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# Routers
-app.include_router(pm_router, prefix="/api")
-# Comment out auth for now if unused in PM Lite:
-# app.include_router(auth_router, prefix="/auth")
-
-# CORS
+# Add CORS middleware first!
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,6 +23,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Optionally, other routers:
+# from routes.auth_routes import router as auth_router  
+
+# Now include routers
+app.include_router(pm_router, prefix="/api")
+# app.include_router(auth_router, prefix="/auth")
 
 logger.info("🚀 FastAPI Server is Starting...")
 
