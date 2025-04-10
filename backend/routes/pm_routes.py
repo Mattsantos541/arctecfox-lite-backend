@@ -48,7 +48,7 @@ For each PM task:
 The plan should be easy for a technician to follow, with helpful notes and context when needed.
 """
 
-@router.post("/")
+@router.post("/generate_pm_plan")
 def generate_pm_plan(data: AssetData):
     print("📥 New PM Plan Request")
     print("Asset Data:", data.dict())
