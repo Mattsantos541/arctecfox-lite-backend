@@ -19,6 +19,13 @@ class AssetData(BaseModel):
     email: Optional[str] = None
     company: Optional[str] = None
 
+def clean_json(raw_text: str) -> str:
+    """Strip markdown formatting from the raw text if present."""
+    # Remove triple backticks if they exist
+    if raw_text.startswith("```") and raw_text.endswith("```"):
+        raw_text = raw_text.strip("`").strip()
+    return raw_text
+
 @router.post("/generate_pm_plan")
 def generate_pm_plan(data: AssetData):
     # Log the incoming request
@@ -34,7 +41,7 @@ def generate_pm_plan(data: AssetData):
     except Exception as e:
         print("⚠️ Failed to write to log file:", e)
 
-    # Construct the prompt for OpenAI using the asset details.
+    # Build the detailed prompt including strict JSON output instructions.
     prompt = f"""Generate a detailed preventive maintenance (PM) plan for the following asset:
 
 - **Asset Name**: {data.name}
@@ -47,7 +54,7 @@ def generate_pm_plan(data: AssetData):
 
 Use the manufacturer's user manual to determine recommended maintenance tasks and intervals. If the manual is not available, infer from similar equipment in the same category.
 
-For each PM task:
+For each PM task, do the following:
 1. Clearly describe the task.
 2. Provide step-by-step instructions.
 3. Include safety precautions.
@@ -55,13 +62,17 @@ For each PM task:
 5. Highlight common failure points this task prevents.
 6. Tailor instructions based on the provided usage and environmental conditions.
 
-The plan should be easy for a technician to follow, with helpful notes and context when needed."""
+**IMPORTANT:** Return only a valid JSON object without any markdown formatting or extra text. The JSON must have a key "maintenance_plan" whose value is an array of objects. Each object must include the following keys:
+- "task_name" (string)
+- "maintenance_interval" (string)
+- "instructions" (array of strings)
+- "reason" (string)
+- "safety_precautions" (string)
+Do not include any other keys or commentary.
+"""
 
     try:
-        # Set your OpenAI API key from the environment (make sure it's set in your Replit secrets)
         openai.api_key = os.getenv("OPENAI_API_KEY")
-
-        # Call OpenAI's ChatCompletion API with the prompt.
         ai_response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -69,14 +80,22 @@ The plan should be easy for a technician to follow, with helpful notes and conte
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,
-            max_tokens=1500  # Adjust the token size as required
+            max_tokens=1500
         )
 
-        # Extract the generated maintenance plan text.
-        maintenance_plan_text = ai_response['choices'][0]['message']['content']
+        response_text = ai_response['choices'][0]['message']['content']
+        print("OpenAI raw response:", response_text)
 
-        # Return the response in a JSON format that the frontend expects.
-        return {"data": {"maintenance_plan": maintenance_plan_text}}
+        # Clean and attempt to parse the raw response
+        clean_response = clean_json(response_text)
+        try:
+            parsed_json = json.loads(clean_response)
+            maintenance_plan = parsed_json.get("maintenance_plan", [])
+        except Exception as parse_error:
+            print("⚠️ JSON parse error:", parse_error)
+            maintenance_plan = []  # fallback
+
+        return {"data": {"maintenance_plan": maintenance_plan}}
     except Exception as e:
         print("⚠️ Failed to generate maintenance plan:", e)
         return {"status": "error", "message": str(e)}
