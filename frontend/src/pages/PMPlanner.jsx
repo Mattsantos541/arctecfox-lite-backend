@@ -85,7 +85,7 @@ export default function PMPlanner() {
         company: userInfo.company || null,
       };
 
-      const response = await axios.post(`${API_BASE_URL}/generate_pm_plan`, payload, {
+      const response = await axios.post(`/api/generate_pm_plan`, payload, {
         headers: { "Content-Type": "application/json" },
         withCredentials: true,
       });

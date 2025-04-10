@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 
 # Routers
-app.include_router(pm_router, prefix="/api")
+app.include_router(pm_router, prefix="/api/generate_pm_plan")
 # Comment out auth for now if unused in PM Lite:
 # app.include_router(auth_router, prefix="/auth")
 
