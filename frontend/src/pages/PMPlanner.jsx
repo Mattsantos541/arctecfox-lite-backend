@@ -55,7 +55,7 @@ export default function PMPlanner() {
     hours: "",
     cycles: "",
     environment: "",
-    date_of_plan_start: "", // NEW FIELD
+    date_of_plan_start: "", // NEW
   });
 
   const [pmPlan, setPmPlan] = useState([]);
@@ -112,12 +112,31 @@ export default function PMPlanner() {
   };
 
   const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(pmPlan);
+    const flattenedData = [];
+
+    pmPlan.forEach((task) => {
+      if (Array.isArray(task.scheduled_dates)) {
+        task.scheduled_dates.forEach((date) => {
+          flattenedData.push({
+            "Scheduled Date": date,
+            "Task Name": task.task_name,
+            "Maintenance Interval": task.maintenance_interval,
+            "Instructions": Array.isArray(task.instructions) ? task.instructions.join(" | ") : task.instructions,
+            "Reason": task.reason,
+            "Common Failures Prevented": task.common_failures_prevented,
+            "Engineering Rationale": task.engineering_rationale,
+            "Safety Precautions": task.safety_precautions,
+          });
+        });
+      }
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(flattenedData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "PMPlan");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "PM Schedule");
     const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
     const blob = new Blob([buffer], { type: "application/octet-stream" });
-    saveAs(blob, "PMPlan.xlsx");
+    saveAs(blob, "Chronological_PM_Schedule.xlsx");
   };
 
   return (
@@ -232,7 +251,7 @@ export default function PMPlanner() {
       <Card title="Export PM Plan">
         <div className="flex space-x-4">
           <Button onClick={exportToCSV} disabled={pmPlan.length === 0}>Download as CSV</Button>
-          <Button onClick={exportToExcel} disabled={pmPlan.length === 0}>Download as Excel</Button>
+          <Button onClick={exportToExcel} disabled={pmPlan.length === 0}>Download Excel (Chronological)</Button>
         </div>
       </Card>
 
