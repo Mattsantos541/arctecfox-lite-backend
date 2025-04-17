@@ -1,7 +1,7 @@
 import os
 import json
 import openai
-from datetime import datetime
+from datetime import datetime, date
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
@@ -16,21 +16,20 @@ class AssetData(BaseModel):
     hours: int
     cycles: int
     environment: str
+    date_of_plan_start: Optional[date] = None
     email: Optional[str] = None
     company: Optional[str] = None
 
 def clean_json(raw_text: str) -> str:
-    """Strip markdown formatting from the raw text if present."""
-    # Remove triple backticks if they exist
     if raw_text.startswith("```") and raw_text.endswith("```"):
         raw_text = raw_text.strip("`").strip()
     return raw_text
 
 @router.post("/generate_pm_plan")
 def generate_pm_plan(data: AssetData):
-    # Log the incoming request
     print("📥 New PM Plan Request")
     print("Asset Data:", data.dict())
+
     try:
         log_entry = {
             "timestamp": datetime.utcnow().isoformat(),
@@ -41,34 +40,44 @@ def generate_pm_plan(data: AssetData):
     except Exception as e:
         print("⚠️ Failed to write to log file:", e)
 
-    # Build the detailed prompt including strict JSON output instructions.
-    prompt = f"""Generate a detailed preventive maintenance (PM) plan for the following asset:
+    plan_start = data.date_of_plan_start.isoformat() if data.date_of_plan_start else datetime.utcnow().date().isoformat()
 
-- **Asset Name**: {data.name}
-- **Model**: {data.model}
-- **Serial Number**: {data.serial}
-- **Asset Category**: {data.category}
-- **Usage Hours**: {data.hours} hours
-- **Usage Cycles**: {data.cycles} cycles
-- **Environmental Conditions**: {data.environment}
+    prompt = f"""
+Generate a detailed preventive maintenance (PM) plan for the following asset:
 
-Use the manufacturer's user manual to determine recommended maintenance tasks and intervals. If the manual is not available, infer from similar equipment in the same category.
+- Asset Name: {data.name}
+- Model: {data.model}
+- Serial Number: {data.serial}
+- Asset Category: {data.category}
+- Usage Hours: {data.hours} hours
+- Usage Cycles: {data.cycles} cycles
+- Environmental Conditions: {data.environment}
+- Date of Plan Start: {plan_start}
 
-For each PM task, do the following:
+Use the manufacturer's user manual to determine recommended maintenance tasks and intervals. If the manual is not available, infer recommendations from best practices for similar assets in the same category.
+
+For each PM task:
 1. Clearly describe the task.
 2. Provide step-by-step instructions.
 3. Include safety precautions.
 4. Note any relevant government regulations or compliance checks.
-5. Highlight common failure points this task prevents.
-6. Tailor instructions based on the provided usage and environmental conditions.
+5. Highlight common failure points this task is designed to prevent.
+6. Tailor instructions based on usage data and environmental conditions.
+7. Include an "engineering_rationale" field explaining why this task and interval were selected.
+8. Based on the plan start date, return a list of future dates when this task should be performed over the next 12 months.
 
-**IMPORTANT:** Return only a valid JSON object without any markdown formatting or extra text. The JSON must have a key "maintenance_plan" whose value is an array of objects. Each object must include the following keys:
+**IMPORTANT:** Return only a valid JSON object with no markdown or explanation. The JSON must have a key "maintenance_plan" whose value is an array of objects. Each object must include:
+
 - "task_name" (string)
-- "maintenance_interval" (string)
+- "maintenance_interval" (string, e.g., "Every 30 days")
 - "instructions" (array of strings)
 - "reason" (string)
+- "engineering_rationale" (string)
 - "safety_precautions" (string)
-Do not include any other keys or commentary.
+- "common_failures_prevented" (string)
+- "scheduled_dates" (array of strings in YYYY-MM-DD format)
+
+Do not include anything else in the response.
 """
 
     try:
@@ -86,14 +95,13 @@ Do not include any other keys or commentary.
         response_text = ai_response['choices'][0]['message']['content']
         print("OpenAI raw response:", response_text)
 
-        # Clean and attempt to parse the raw response
         clean_response = clean_json(response_text)
         try:
             parsed_json = json.loads(clean_response)
             maintenance_plan = parsed_json.get("maintenance_plan", [])
         except Exception as parse_error:
             print("⚠️ JSON parse error:", parse_error)
-            maintenance_plan = []  # fallback
+            maintenance_plan = []
 
         return {"data": {"maintenance_plan": maintenance_plan}}
     except Exception as e:

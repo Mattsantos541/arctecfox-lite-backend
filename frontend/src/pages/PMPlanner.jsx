@@ -55,6 +55,7 @@ export default function PMPlanner() {
     hours: "",
     cycles: "",
     environment: "",
+    date_of_plan_start: "", // NEW FIELD
   });
 
   const [pmPlan, setPmPlan] = useState([]);
@@ -85,7 +86,7 @@ export default function PMPlanner() {
         company: userInfo.company || null,
       };
 
-      const response = await axios.post(`/api/generate_pm_plan`, payload, {
+      const response = await axios.post(`${API_BASE_URL}/generate_pm_plan`, payload, {
         headers: { "Content-Type": "application/json" },
         withCredentials: true,
       });
@@ -151,6 +152,7 @@ export default function PMPlanner() {
           <Input label="Usage Hours" name="hours" value={assetData.hours} onChange={handleInputChange} placeholder="e.g. 1200" type="number" />
           <Input label="Usage Cycles" name="cycles" value={assetData.cycles} onChange={handleInputChange} placeholder="e.g. 300" type="number" />
           <Input label="Environmental Condition" name="environment" value={assetData.environment} onChange={handleInputChange} placeholder="e.g. Outdoor, dusty" />
+          <Input label="Plan Start Date" name="date_of_plan_start" value={assetData.date_of_plan_start} onChange={handleInputChange} type="date" />
         </div>
 
         <div className="mt-4">
@@ -178,7 +180,10 @@ export default function PMPlanner() {
                   <th className="px-4 py-2 border-b">Task</th>
                   <th className="px-4 py-2 border-b">Interval</th>
                   <th className="px-4 py-2 border-b">Instructions</th>
+                  <th className="px-4 py-2 border-b">Scheduled Dates</th>
                   <th className="px-4 py-2 border-b">Reason</th>
+                  <th className="px-4 py-2 border-b">Failures Prevented</th>
+                  <th className="px-4 py-2 border-b">Rationale</th>
                   <th className="px-4 py-2 border-b">Safety</th>
                 </tr>
               </thead>
@@ -198,7 +203,20 @@ export default function PMPlanner() {
                         task.instructions
                       )}
                     </td>
+                    <td className="px-4 py-2">
+                      {Array.isArray(task.scheduled_dates) ? (
+                        <ul className="list-disc list-inside">
+                          {task.scheduled_dates.map((date, idx) => (
+                            <li key={idx}>{date}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        task.scheduled_dates
+                      )}
+                    </td>
                     <td className="px-4 py-2">{task.reason}</td>
+                    <td className="px-4 py-2">{task.common_failures_prevented}</td>
+                    <td className="px-4 py-2">{task.engineering_rationale}</td>
                     <td className="px-4 py-2">{task.safety_precautions}</td>
                   </tr>
                 ))}
