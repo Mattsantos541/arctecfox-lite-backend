@@ -21,7 +21,7 @@ class AssetData(BaseModel):
     company: Optional[str] = None
 
 def format_numbered_instructions(instructions: list[str]) -> str:
-    return "\\n".join([f"{i + 1}. {step.strip()}" for i, step in enumerate(instructions)])
+    return "\n".join([f"{i + 1}. {step.strip()}" for i, step in enumerate(instructions)])
 
 def generate_prompt(data: AssetData) -> str:
     return f"""
@@ -32,7 +32,7 @@ Each task should include:
 - maintenance_trigger: a list such as ["calendar", "hours"] or just one
 - calendar_interval: e.g., "Every 3 months" (if applicable)
 - hours_interval: e.g., "Every 500 hours" (if applicable)
-- instructions: a list of short steps (these will be converted to a numbered list)
+- instructions: a list of short steps OR a pipe-separated string (these will be converted to a numbered list)
 - reason
 - safety_precautions
 
@@ -58,7 +58,7 @@ def generate_pm_plan(data: AssetData, format: str = Query("json", enum=["json", 
             "input": data.dict()
         }
         with open("pm_lite_logs.txt", "a") as f:
-            f.write(json.dumps(log_entry) + "\\n")
+            f.write(json.dumps(log_entry) + "\n")
     except Exception as e:
         print("⚠️ Log write failed:", e)
 
@@ -78,8 +78,14 @@ def generate_pm_plan(data: AssetData, format: str = Query("json", enum=["json", 
             task["asset_name"] = data.name
             task["asset_model"] = data.model
             task["hours_interval"] = task.get("hours_interval", "")
-            if isinstance(task.get("instructions"), list):
-                task["instructions"] = format_numbered_instructions(task["instructions"])
+
+            # Normalize instructions
+            instructions_raw = task.get("instructions")
+            if isinstance(instructions_raw, str) and "|" in instructions_raw:
+                steps = [s.strip() for s in instructions_raw.split("|") if s.strip()]
+                task["instructions"] = format_numbered_instructions(steps)
+            elif isinstance(instructions_raw, list):
+                task["instructions"] = format_numbered_instructions(instructions_raw)
 
         if format == "excel":
             df = pd.DataFrame(plan_json)
@@ -94,5 +100,5 @@ def generate_pm_plan(data: AssetData, format: str = Query("json", enum=["json", 
             return JSONResponse(content={"pm_plan": plan_json})
 
     except Exception as e:
-        print("❌ Generation failed:", e)
+        print("❌ Error generating plan:", e)
         return {"error": str(e), "pm_plan": []}
