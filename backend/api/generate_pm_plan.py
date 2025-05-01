@@ -1,8 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 import json
+import openai
+import pandas as pd
 
 router = APIRouter()
 
@@ -17,9 +20,36 @@ class AssetData(BaseModel):
     email: Optional[str] = None
     company: Optional[str] = None
 
+def format_numbered_instructions(instructions: list[str]) -> str:
+    return "\\n".join([f"{i + 1}. {step.strip()}" for i, step in enumerate(instructions)])
+
+def generate_prompt(data: AssetData) -> str:
+    return f"""
+You are an expert preventive maintenance planner. Based on the asset details below, generate a PM plan in JSON format.
+
+Each task should include:
+- task_name
+- maintenance_trigger: a list such as ["calendar", "hours"] or just one
+- calendar_interval: e.g., "Every 3 months" (if applicable)
+- hours_interval: e.g., "Every 500 hours" (if applicable)
+- instructions: a list of short steps (these will be converted to a numbered list)
+- reason
+- safety_precautions
+
+Asset Details:
+- Name: {data.name}
+- Model: {data.model}
+- Serial: {data.serial}
+- Category: {data.category}
+- Operating Hours: {data.hours}
+- Cycles: {data.cycles}
+- Environment: {data.environment}
+"""
+
 @router.post("/generate_pm_plan")
-def generate_pm_plan(data: AssetData):
-    print("📥 New PM Plan Request")
+def generate_pm_plan(data: AssetData, format: str = Query("json", enum=["json", "excel"])):
+    print("📥 PM Plan Request")
+    print("Format:", format)
     print("Asset Data:", data.dict())
 
     try:
@@ -28,23 +58,41 @@ def generate_pm_plan(data: AssetData):
             "input": data.dict()
         }
         with open("pm_lite_logs.txt", "a") as f:
-            f.write(json.dumps(log_entry) + "\n")
+            f.write(json.dumps(log_entry) + "\\n")
     except Exception as e:
-        print("⚠️ Failed to write to log file:", e)
+        print("⚠️ Log write failed:", e)
 
-    mock_plan = [
-        {
-            "task_name": "Inspect bearings",
-            "maintenance_interval": "Every 3 months",
-            "instructions": ["Check for wear", "Lubricate bearings"],
-            "reason": "Prevent mechanical failure due to friction",
-            "safety_precautions": "Lockout/tagout before inspection"
-        },
-        {
-            "task_name": "Replace air filter",
-            "maintenance_interval": "Every 6 months",
-            "instructions": ["Turn off equipment", "Replace filter cartridge"],
-            "reason": "Ensure clean airflow and optimal performance",
-            "safety_precautions": "Wear mask and gloves"
-        }
-    ]
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "You generate preventive maintenance schedules."},
+                {"role": "user", "content": generate_prompt(data)}
+            ],
+            temperature=0.3
+        )
+
+        plan_json = json.loads(response['choices'][0]['message']['content'])
+
+        for task in plan_json:
+            task["asset_name"] = data.name
+            task["asset_model"] = data.model
+            task["hours_interval"] = task.get("hours_interval", "")
+            if isinstance(task.get("instructions"), list):
+                task["instructions"] = format_numbered_instructions(task["instructions"])
+
+        if format == "excel":
+            df = pd.DataFrame(plan_json)
+            output_path = "pm_plan_output.xlsx"
+            df.to_excel(output_path, index=False)
+            return FileResponse(
+                output_path,
+                media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                filename="PM_Plan.xlsx"
+            )
+        else:
+            return JSONResponse(content={"pm_plan": plan_json})
+
+    except Exception as e:
+        print("❌ Generation failed:", e)
+        return {"error": str(e), "pm_plan": []}
