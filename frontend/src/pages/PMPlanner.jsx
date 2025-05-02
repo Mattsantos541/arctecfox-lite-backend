@@ -43,7 +43,8 @@ function Card({ title, children }) {
 }
 // -----------------------------------
 
-const API_BASE_URL = "/api";
+// Pull the live backend URL from Vercel's env
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 export default function PMPlanner() {
   const [userInfo, setUserInfo] = useState({ email: "", company: "" });
@@ -55,7 +56,7 @@ export default function PMPlanner() {
     hours: "",
     cycles: "",
     environment: "",
-    date_of_plan_start: "", // NEW
+    date_of_plan_start: "",
   });
 
   const [pmPlan, setPmPlan] = useState([]);
@@ -86,10 +87,14 @@ export default function PMPlanner() {
         company: userInfo.company || null,
       };
 
-      const response = await axios.post(`${API_BASE_URL}/generate_pm_plan`, payload, {
-        headers: { "Content-Type": "application/json" },
-        withCredentials: true,
-      });
+      const response = await axios.post(
+        `${API_BASE_URL}/api/generate_pm_plan`,
+        payload,
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        }
+      );
 
       if (response.data?.data?.maintenance_plan) {
         setPmPlan(response.data.data.maintenance_plan);
@@ -121,8 +126,10 @@ export default function PMPlanner() {
             "Scheduled Date": date,
             "Task Name": task.task_name,
             "Maintenance Interval": task.maintenance_interval,
-            "Instructions": Array.isArray(task.instructions) ? task.instructions.join(" | ") : task.instructions,
-            "Reason": task.reason,
+            "Instructions": Array.isArray(task.instructions)
+              ? task.instructions.join(" | ")
+              : task.instructions,
+            Reason: task.reason,
             "Common Failures Prevented": task.common_failures_prevented,
             "Engineering Rationale": task.engineering_rationale,
             "Safety Precautions": task.safety_precautions,
@@ -134,7 +141,10 @@ export default function PMPlanner() {
     const worksheet = XLSX.utils.json_to_sheet(flattenedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "PM Schedule");
-    const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const buffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
     const blob = new Blob([buffer], { type: "application/octet-stream" });
     saveAs(blob, "Chronological_PM_Schedule.xlsx");
   };
@@ -164,16 +174,65 @@ export default function PMPlanner() {
       {/* Asset Input */}
       <Card title="Asset Data Input">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input label="Asset Name" name="name" value={assetData.name} onChange={handleInputChange} placeholder="e.g. Hydraulic Pump" />
-          <Input label="Model" name="model" value={assetData.model} onChange={handleInputChange} placeholder="e.g. XJ-2000" />
-          <Input label="Serial Number" name="serial" value={assetData.serial} onChange={handleInputChange} placeholder="e.g. SN12345" />
-          <Input label="Asset Category" name="category" value={assetData.category} onChange={handleInputChange} placeholder="e.g. Pump" />
-          <Input label="Usage Hours" name="hours" value={assetData.hours} onChange={handleInputChange} placeholder="e.g. 1200" type="number" />
-          <Input label="Usage Cycles" name="cycles" value={assetData.cycles} onChange={handleInputChange} placeholder="e.g. 300" type="number" />
-          <Input label="Environmental Condition" name="environment" value={assetData.environment} onChange={handleInputChange} placeholder="e.g. Outdoor, dusty" />
-          <Input label="Plan Start Date" name="date_of_plan_start" value={assetData.date_of_plan_start} onChange={handleInputChange} type="date" />
+          <Input
+            label="Asset Name"
+            name="name"
+            value={assetData.name}
+            onChange={handleInputChange}
+            placeholder="e.g. Hydraulic Pump"
+          />
+          <Input
+            label="Model"
+            name="model"
+            value={assetData.model}
+            onChange={handleInputChange}
+            placeholder="e.g. XJ-2000"
+          />
+          <Input
+            label="Serial Number"
+            name="serial"
+            value={assetData.serial}
+            onChange={handleInputChange}
+            placeholder="e.g. SN12345"
+          />
+          <Input
+            label="Asset Category"
+            name="category"
+            value={assetData.category}
+            onChange={handleInputChange}
+            placeholder="e.g. Pump"
+          />
+          <Input
+            label="Usage Hours"
+            name="hours"
+            value={assetData.hours}
+            onChange={handleInputChange}
+            placeholder="e.g. 1200"
+            type="number"
+          />
+          <Input
+            label="Usage Cycles"
+            name="cycles"
+            value={assetData.cycles}
+            onChange={handleInputChange}
+            placeholder="e.g. 300"
+            type="number"
+          />
+          <Input
+            label="Environmental Condition"
+            name="environment"
+            value={assetData.environment}
+            onChange={handleInputChange}
+            placeholder="e.g. Outdoor, dusty"
+          />
+          <Input
+            label="Plan Start Date"
+            name="date_of_plan_start"
+            value={assetData.date_of_plan_start}
+            onChange={handleInputChange}
+            type="date"
+          />
         </div>
-
         <div className="mt-4">
           <Button onClick={generatePMPlan} disabled={loading}>
             {loading ? "Generating..." : "Generate AI-Powered PM Plan"}
@@ -185,9 +244,24 @@ export default function PMPlanner() {
       <Card title="AI-Powered PM Plan">
         {loading ? (
           <div className="flex items-center justify-center py-6">
-            <svg className="animate-spin h-5 w-5 mr-3 text-blue-600" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            <svg
+              className="animate-spin h-5 w-5 mr-3 text-blue-600"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+                fill="none"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
             </svg>
             <span className="text-gray-700">Generating PM Plan...</span>
           </div>
@@ -234,7 +308,9 @@ export default function PMPlanner() {
                       )}
                     </td>
                     <td className="px-4 py-2">{task.reason}</td>
-                    <td className="px-4 py-2">{task.common_failures_prevented}</td>
+                    <td className="px-4 py-2">
+                      {task.common_failures_prevented}
+                    </td>
                     <td className="px-4 py-2">{task.engineering_rationale}</td>
                     <td className="px-4 py-2">{task.safety_precautions}</td>
                   </tr>
@@ -250,13 +326,21 @@ export default function PMPlanner() {
       {/* Export Options */}
       <Card title="Export PM Plan">
         <div className="flex space-x-4">
-          <Button onClick={exportToCSV} disabled={pmPlan.length === 0}>Download as CSV</Button>
-          <Button onClick={exportToExcel} disabled={pmPlan.length === 0}>Download Excel (Chronological)</Button>
+          <Button onClick={exportToCSV} disabled={pmPlan.length === 0}>
+            Download as CSV
+          </Button>
+          <Button onClick={exportToExcel} disabled={pmPlan.length === 0}>
+            Download Excel (Chronological)
+          </Button>
         </div>
       </Card>
 
       {/* Error Message */}
-      {error && <div className="bg-red-100 text-red-700 px-4 py-3 rounded mt-4">{error}</div>}
+      {error && (
+        <div className="bg-red-100 text-red-700 px-4 py-3 rounded mt-4">
+          {error}
+        </div>
+      )}
     </MainLayout>
   );
 }
