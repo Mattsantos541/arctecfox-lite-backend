@@ -1,12 +1,15 @@
 import os
 import json
-import openai
 from datetime import datetime, date
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
+from openai import OpenAI  # new client
 
 router = APIRouter()
+
+# Initialize the OpenAI v1.x client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 class AssetData(BaseModel):
     name: str
@@ -30,6 +33,7 @@ def generate_pm_plan(data: AssetData):
     print("📥 New PM Plan Request")
     print("Asset Data:", data.dict())
 
+    # Write a log entry
     try:
         log_entry = {
             "timestamp": datetime.utcnow().isoformat(),
@@ -81,8 +85,8 @@ Do not include anything else in the response.
 """
 
     try:
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        ai_response = openai.ChatCompletion.create(
+        # Call the new v1.x client
+        ai_resp = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are an expert in preventive maintenance planning."},
@@ -92,18 +96,20 @@ Do not include anything else in the response.
             max_tokens=1500
         )
 
-        response_text = ai_response['choices'][0]['message']['content']
+        # Extract the content
+        response_text = ai_resp.choices[0].message.content
         print("OpenAI raw response:", response_text)
 
         clean_response = clean_json(response_text)
         try:
-            parsed_json = json.loads(clean_response)
-            maintenance_plan = parsed_json.get("maintenance_plan", [])
+            parsed = json.loads(clean_response)
+            maintenance_plan = parsed.get("maintenance_plan", [])
         except Exception as parse_error:
             print("⚠️ JSON parse error:", parse_error)
             maintenance_plan = []
 
         return {"data": {"maintenance_plan": maintenance_plan}}
+
     except Exception as e:
         print("⚠️ Failed to generate maintenance plan:", e)
         return {"status": "error", "message": str(e)}
