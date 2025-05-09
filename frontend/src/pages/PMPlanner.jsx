@@ -87,20 +87,29 @@ export default function PMPlanner() {
         company: userInfo.company || null,
       };
 
+      // 1) Call the API
       const response = await axios.post(
         `${API_BASE_URL}/api/generate_pm_plan`,
         payload,
-        {
-          headers: { "Content-Type": "application/json" },
-          withCredentials: true,
-        }
+        { headers: { "Content-Type": "application/json" }, withCredentials: true }
       );
 
-      if (response.data?.data?.maintenance_plan) {
-        setPmPlan(response.data.data.maintenance_plan);
-      } else {
+      // 2) Inspect the raw response in the console
+      console.log("API response:", response.data);
+
+      // 3) Extract the maintenance plan from whichever key it's in
+      const resp = response.data;
+      const maintenancePlan =
+        resp.data?.maintenance_plan ??
+        resp.maintenance_plan ??
+        resp.plan;
+
+      if (!Array.isArray(maintenancePlan)) {
+        console.error("Unexpected format:", resp);
         throw new Error("Invalid response format from API.");
       }
+
+      setPmPlan(maintenancePlan);
     } catch (err) {
       console.error("Error generating PM plan:", err);
       setError("Something went wrong while generating the PM plan.");
@@ -344,3 +353,4 @@ export default function PMPlanner() {
     </MainLayout>
   );
 }
+
