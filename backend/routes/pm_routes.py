@@ -7,7 +7,6 @@ from typing import Optional
 from openai import OpenAI  # new client
 
 router = APIRouter()
-
 # Initialize the OpenAI v1.x client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
