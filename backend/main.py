@@ -10,26 +10,25 @@ from routes.pm_routes import router as pm_router
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 # Logging config
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# Add CORS middleware first!
+# Only allow your Vercel frontend, no credentials needed
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://lite.arctecfox.ai"],  # <-- your exact frontend URL
-    allow_credentials=True,
+    allow_origins=["https://lite.arctecfox.ai"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Optionally, other routers:
-# from routes.auth_routes import router as auth_router  
-
-# Now include routers
+# Mount the PM router at /api
 app.include_router(pm_router, prefix="/api")
-# app.include_router(auth_router, prefix="/auth")
 
 logger.info("🚀 FastAPI Server is Starting...")
 
@@ -39,4 +38,9 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=9000, reload=True)
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", 9000)),
+        reload=True
+    )
