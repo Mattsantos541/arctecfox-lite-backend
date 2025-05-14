@@ -1,3 +1,5 @@
+// frontend/src/pages/PMPlanner.jsx
+
 import { useState } from "react";
 import axios from "axios";
 import { saveAs } from "file-saver";
@@ -43,7 +45,7 @@ function Card({ title, children }) {
 }
 // -----------------------------------
 
-// Pull the live backend URL from Vercel's env
+// Live backend URL from Vercel env
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 export default function PMPlanner() {
@@ -81,23 +83,21 @@ export default function PMPlanner() {
     try {
       const payload = {
         ...assetData,
-        hours: parseInt(assetData.hours || 0),
-        cycles: parseInt(assetData.cycles || 0),
+        hours: parseInt(assetData.hours || 0, 10),
+        cycles: parseInt(assetData.cycles || 0, 10),
         email: userInfo.email || null,
         company: userInfo.company || null,
       };
 
-      // 1) Call the API
       const response = await axios.post(
         `${API_BASE_URL}/api/generate_pm_plan`,
         payload,
-        { headers: { "Content-Type": "application/json" }, withCredentials: true }
+        { headers: { "Content-Type": "application/json" } }
       );
 
-      // 2) Inspect the raw response in the console
+      // Log the raw response for debugging
       console.log("API response:", response.data);
 
-      // 3) Extract the maintenance plan from whichever key it's in
       const resp = response.data;
       const maintenancePlan =
         resp.data?.maintenance_plan ??
@@ -106,7 +106,7 @@ export default function PMPlanner() {
 
       if (!Array.isArray(maintenancePlan)) {
         console.error("Unexpected format:", resp);
-        throw new Error("Invalid response format from API.");
+        throw new Error("Invalid response format");
       }
 
       setPmPlan(maintenancePlan);
@@ -135,7 +135,7 @@ export default function PMPlanner() {
             "Scheduled Date": date,
             "Task Name": task.task_name,
             "Maintenance Interval": task.maintenance_interval,
-            "Instructions": Array.isArray(task.instructions)
+            Instructions: Array.isArray(task.instructions)
               ? task.instructions.join(" | ")
               : task.instructions,
             Reason: task.reason,
@@ -258,17 +258,11 @@ export default function PMPlanner() {
               viewBox="0 0 24 24"
             >
               <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-                fill="none"
+                className="opacity-25" cx="12" cy="12" r="10"
+                stroke="currentColor" strokeWidth="4" fill="none"
               />
               <path
-                className="opacity-75"
-                fill="currentColor"
+                className="opacity-75" fill="currentColor"
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
               />
             </svg>
@@ -353,4 +347,3 @@ export default function PMPlanner() {
     </MainLayout>
   );
 }
-
