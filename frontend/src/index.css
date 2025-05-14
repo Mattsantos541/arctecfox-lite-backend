@@ -1,12 +1,6 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-.input {
-  @apply border p-2 rounded w-full;
-}
-
 
 @layer base {
   body {
@@ -18,9 +12,8 @@
   .main-layout {
     @apply min-h-screen bg-gray-100;
   }
-}
 
-@layer components {
+  /* your reusable input style */
   .input {
     @apply border p-2 rounded w-full;
   }
@@ -32,11 +25,9 @@
   .custom-nav {
     @apply bg-gray-900 p-4 flex space-x-6;
   }
-
   .custom-nav li {
     @apply inline-block;
   }
-
   .custom-nav a {
     @apply text-white hover:text-gray-300;
   }
@@ -45,5 +36,3 @@
     @apply bg-gray-900 text-white px-4 py-2 rounded hover:bg-gray-700;
   }
 }
-
-
