@@ -18,11 +18,10 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.1.6",
     "@vitejs/plugin-react": "^4.0.0",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.3",
-    "tailwindcss": "^4.1.6",
+    "tailwindcss": "^4.1.7",
     "vite": "^5.4.14"
   }
 }
