@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [
-    react(),         // React support (JSX, HMR, etc.)
+    react(),  // only React plugin here
   ],
   server: {
     host: '0.0.0.0',
