@@ -48,7 +48,7 @@ Generate a detailed preventive maintenance (PM) plan for the following asset:
 - Environmental Conditions: {data.environment}
 - Date of Plan Start: {plan_start}
 
-Use the manufacturer's user manual to determine recommended maintenance tasks and intervals. If the manual is not available, infer recommendations from best practices for similar assets in the same category.
+Use the manufacturer's user manual to determine recommended maintenance tasks and intervals. If the manual is not available, infer recommendations from best practices for similar assets in the same category. Be as Detailed as possible in the instructions.
 
 For each PM task:
 1. Clearly describe the task.
